@@ -6,564 +6,669 @@
     <title>シフト管理システム</title>
     <style>
         :root {
-            --primary: #4f46e5; --primary-hover: #4338ca;
-            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
-            --bg: #f3f4f6; --surface: #ffffff; --text: #1f2937;
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --border-color: #e5e7eb;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { width: 100%; max-width: 1100px; }
-        .card { background: var(--surface); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { margin-bottom: 20px; color: #374151; font-size: 1.4rem; display: flex; align-items: center; gap: 8px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: #4b5563; }
-        input, select { width: 100%; padding: 11px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; color: var(--text); transition: border-color 0.2s; }
-        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        button:hover { background: var(--primary-hover); }
-        button:disabled { background: #9ca3af; cursor: not-allowed; }
-        
-        .login-container { max-width: 420px; width: 100%; margin: 0 auto; }
-        .login-title { text-align: center; justify-content: center; font-size: 1.6rem; color: #111827; margin-bottom: 25px; font-weight: 700; }
-        
-        .alert-banner { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1rem; display: none; background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
 
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .calendar-nav-btn { width: auto; padding: 6px 14px; font-size: 0.9rem; background: #64748b; }
-        .calendar-nav-btn:hover { background: #475569; }
-        .current-month-display { font-weight: bold; font-size: 1.2rem; color: #1e293b; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+        }
 
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 5px; }
-        .day-name { text-align: center; font-weight: bold; padding: 5px; font-size: 0.85rem; color: #6b7280; }
-        
-        /* カレンダーマスと「今日」の装飾 */
-        .calendar-day { background: #f9fafb; border: 1px solid #e5e7eb; min-height: 105px; padding: 6px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s; font-weight: 500; position: relative; }
-        .calendar-day:hover { background: #f0fdf4; border-color: var(--success); }
-        .calendar-day.today { border: 2px solid #2563eb !important; background: #eff6ff; }
-        .today-badge { font-size: 0.65rem; color: #ffffff; background: #2563eb; padding: 1px 4px; border-radius: 3px; position: absolute; top: 4px; right: 4px; font-weight: bold; }
-        
-        .calendar-day.selected { background: #e0e7ff; border-color: var(--primary); box-shadow: 0 0 0 2px #c7d2fe; }
-        .calendar-day.has-applied { border-left: 4px solid var(--warning); }
-        .calendar-day.has-confirmed { background: #f0fdf4; border-left: 4px solid var(--success); }
-        .status-dot { font-size: 0.7rem; color: var(--warning); font-weight: bold; margin-top: 2px; }
-        
-        .day-memo { font-size: 0.65rem; color: #ef4444; background: #fee2e2; border-radius: 3px; padding: 1px 3px; margin-top: 3px; text-align: center; word-break: break-all; font-weight: bold; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-        .flex-box { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 768px) { .flex-box { grid-template-columns: 1fr; } }
-        
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
-        .badge-applied { background: #fef3c7; color: #d97706; }
-        .badge-confirmed { background: #d1fae5; color: #065f46; }
-        
-        .shift-item { padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; background: #f9fafb; }
-        .salary-breakdown { font-size: 0.85rem; color: #4b5563; background: #f3f4f6; padding: 10px; border-radius: 6px; margin-top: 8px; line-height: 1.5; }
-        .admin-actions { margin-top: 10px; display: flex; gap: 10px; }
-        .btn-sm { padding: 6px 12px; font-size: 0.85rem; width: auto; }
-        .btn-danger { background: var(--danger); } .btn-danger:hover { background: #dc2626; }
-        .btn-success { background: var(--success); } .btn-success:hover { background: #059669; }
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+        }
 
-        .summary-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        @media (max-width: 480px) { .summary-wrapper { grid-template-columns: 1fr; } }
-        .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px; border-radius: 12px; }
-        .summary-card.time-card { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-        .summary-title { font-size: 0.85rem; opacity: 0.9; margin-bottom: 5px; font-weight: bold; }
-        .summary-amount { font-size: 1.8rem; font-weight: bold; }
-        
-        .settings-form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end; }
-        @media (max-width: 768px) { .settings-form-grid { grid-template-columns: 1fr; } }
+        .dashboard-container {
+            width: 100%;
+            max-width: 1200px;
+            display: none;
+        }
 
-        .payslip-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
-        .payslip-table th, .payslip-table td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
-        .payslip-table th { background: #f3f4f6; }
+        .card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        input[type="text"], input[type="password"], input[type="date"], input[type="time"], input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* 警告表示用バナー */
+        .alert-banner {
+            display: none;
+            background-color: #fef3c7;
+            border-left: 4px solid var(--warning-color);
+            color: #92400e;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        /* ダッシュボードレイアウト */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .user-info {
+            font-size: 1.1em;
+        }
+
+        .logout-btn {
+            background-color: var(--danger-color);
+            width: auto;
+            padding: 8px 15px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 2fr;
+            }
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f9fafb;
+            font-weight: bold;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .badge-pending { background-color: #fef3c7; color: #d97706; }
+        .badge-approved { background-color: #d1fae5; color: #059669; }
+        .badge-rejected { background-color: #fee2e2; color: #dc2626; }
+
+        .btn-group {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            width: auto;
+        }
+
+        .btn-approve { background-color: var(--success-color); }
+        .btn-reject { background-color: var(--danger-color); }
     </style>
 </head>
 <body>
 
-<div id="mainContainer" class="login-container">
-    <div id="loginCard" class="card" style="margin-bottom: 0;">
-        <h2 class="login-title">🔐 シフト管理システム</h2>
+<!-- ログイン画面 -->
+<div id="loginCard" class="login-container card">
+    <h2>シフト管理 ログイン</h2>
+    <form id="loginForm">
         <div class="form-group">
             <label for="userId">ユーザーID</label>
-            <input type="text" id="userId" placeholder="スタッフ: staff01 / 管理者: admin01">
+            <input type="text" id="userId" placeholder="IDを入力してください" required>
         </div>
-        <div class="form-group" style="margin-bottom: 22px;">
+        <div class="form-group">
             <label for="password">パスワード</label>
-            <input type="password" id="password" placeholder="パスワードを入力してください">
+            <input type="password" id="password" placeholder="パスワードを入力してください" required>
         </div>
-        <button onclick="handleLogin()">ログイン</button>
+        <button type="submit">ログイン</button>
+    </form>
+</div>
+
+<!-- メインダッシュボード -->
+<div id="dashboard" class="dashboard-container">
+    <!-- 提出期限アラートバナー -->
+    <div id="deadlineAlert" class="alert-banner"></div>
+
+    <div class="header">
+        <div class="user-info">
+            ログイン中: <strong id="loggedInUser">ユーザー名</strong> 
+            [<span id="userRoleBadge">権限</span>]
+        </div>
+        <button class="logout-btn" onclick="handleLogout()">ログアウト</button>
     </div>
 
-    <div id="dashboard" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1 id="welcomeText" style="font-size: 1.6rem;">👋 利用者画面</h1>
-            <button onclick="handleLogout()" class="btn-sm btn-danger" style="margin-top:0;">ログアウト</button>
-        </div>
-
-        <div id="alertBanner" class="alert-banner"></div>
-
-        <div class="card" style="padding:15px; background: #eff6ff; border-left: 4px solid var(--primary); margin-bottom: 15px;">
-            <p id="systemSettingsText" style="font-size:0.9rem; color:#1e40af; font-weight:500;"></p>
-        </div>
-
-        <div id="adminSettingsCard" class="card" style="display: none; background: #f8fafc; border: 1px solid #cbd5e1;">
-            <h2>⚙️ システム設定変更（管理者専用）</h2>
-            <div class="settings-form-grid">
-                <div class="form-group" style="margin-bottom:0;"><label>提出期限</label><input type="text" id="inputDeadline"></div>
-                <div class="form-group" style="margin-bottom:0;"><label>締め日</label><input type="text" id="inputClosing"></div>
-                <div class="form-group" style="margin-bottom:0;"><label>支給日</label><input type="text" id="inputPayment"></div>
-                <button onclick="saveSystemSettings()" class="btn-success" style="width: auto; padding: 11px 24px;">設定を保存する</button>
-            </div>
-        </div>
-
-        <div id="payslipCard" class="card" style="display: none; border: 2px solid var(--success); background: #f0fdf4;">
-            <h2 style="color: #065f46;">📄 <span id="payslipTitleMonth">先月</span>分の確定勤怠・給与明細</h2>
-            <p style="font-size: 0.85rem; color: #374151; margin-bottom: 15px;">※先月確定した労働実績および明細書を表示しています。</p>
-            <div style="display: flex; gap: 30px; font-weight: bold; margin-bottom: 15px; font-size: 1.1rem; color: #111827;">
-                <div>実質労働時間: <span id="payslipHours" style="color: var(--primary);">0</span> 時間</div>
-                <div>差引支給額: <span id="payslipTotalPay" style="color: var(--success);">¥0</span></div>
-            </div>
-            <table class="payslip-table">
-                <thead><tr><th>勤務日</th><th>勤務時間</th><th>休憩</th><th>実働</th><th>概算給与</th></tr></thead>
-                <tbody id="payslipTableBody"></tbody>
-            </table>
-        </div>
-
-        <div id="salarySummaryCard" class="summary-wrapper" style="display: none;">
-            <div class="summary-card time-card">
-                <div class="summary-title"><span class="current-month-label">今</span>月の総労働時間</div>
-                <div class="summary-amount" id="totalMonthlyHours">0 時間</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-title"><span class="current-month-label">今</span>月の概算給与合計</div>
-                <div class="summary-amount" id="totalMonthlySalary">¥0</div>
-            </div>
-        </div>
-
-        <div id="adminSummaryCard" class="card" style="display: none; background: #faf5ff; border: 1px solid #d8b4fe;">
-            <h2>📊 全スタッフの<span class="current-month-label">今</span>月合計</h2>
-            <div style="display: flex; gap: 30px; font-weight: bold; font-size: 1.2rem;">
-                <div>総配置時間: <span id="adminTotalHours" style="color: #8b5cf6;">0</span> 時間</div>
-                <div>総概算人件費: <span id="adminTotalPay" style="color: #a855f7;">¥0</span></div>
-            </div>
-        </div>
-
-        <div class="flex-box">
-            <div id="calendarZone" class="card">
-                <h2 id="calendarTitle">📅 シフトカレンダー</h2>
-                
-                <div class="calendar-header">
-                    <button class="calendar-nav-btn" onclick="changeMonth(-1)">◀ 前の月</button>
-                    <div class="current-month-display" id="currentMonthDisplay">2026年07月</div>
-                    <button class="calendar-nav-btn" onclick="changeMonth(1)">次の月 ▶</button>
+    <!-- スタッフ用画面 -->
+    <div id="staffView" class="grid" style="display: none;">
+        <div class="card">
+            <h3>シフト提出申請</h3>
+            <form id="shiftSubmitForm" style="margin-top: 15px;">
+                <div class="form-group">
+                    <label for="shiftDate">希望日</label>
+                    <input type="date" id="shiftDate" required>
                 </div>
-
-                <p id="selectedDateText" style="font-weight: bold; color: var(--primary); margin-bottom: 10px;">📅 日付を選択してください</p>
-                <div class="calendar-grid" id="calendarGrid"></div>
-
-                <div id="shiftFormFields" style="margin-top:15px;">
-                    <div style="border-bottom: 1px dashed #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;">
-                        <div class="form-group"><label>開始時間</label><input type="time" id="startTime" value="09:00"></div>
-                        <div class="form-group"><label>終了時間</label><input type="time" id="endTime" value="18:00"></div>
-                        <div class="form-group"><label>休憩時間 (分)</label><input type="number" id="breakTime" value="0" min="0" step="15"></div>
-                        <div class="form-group" id="adminStaffSelectGroup" style="display: none;">
-                            <label>対象スタッフID</label><input type="text" id="targetStaffId" placeholder="例: staff01">
-                        </div>
-                        <button id="submitBtn" onclick="submitShift()" disabled>この日付でシフトを登録・申請する</button>
-                    </div>
-
-                    <div class="form-group" id="memoFormGroup" style="background: #fdf2f8; padding: 12px; border-radius: 8px; border: 1px solid #fbcfe8;">
-                        <label style="color: #9d174d;">📝 この日のメモ・祝日設定（画面共通）</label>
-                        <div style="display:flex; gap: 8px;">
-                            <input type="text" id="dayMemoInput" placeholder="例: 海の日、店舗イベント など">
-                            <button onclick="saveDayMemo()" id="saveMemoBtn" class="btn-success" style="width:auto; padding: 0 15px; font-size:0.9rem;" disabled>保存</button>
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label for="startTime">開始時間</label>
+                    <input type="time" id="startTime" required>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label for="endTime">終了時間</label>
+                    <input type="time" id="endTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="breakTime">休憩時間 (分)</label>
+                    <input type="number" id="breakTime" min="0" value="0" required>
+                </div>
+                <button type="submit">シフトを申請する</button>
+            </form>
+        </div>
 
-            <div class="card">
-                <h2 id="listTitle">📋 シフト一覧</h2>
-                <div id="shiftList"></div>
+        <div class="card">
+            <h3>あなたのシフト一覧</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>時間帯</th>
+                            <th>休憩</th>
+                            <th>ステータス</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffShiftTableBody">
+                        <!-- 動的に挿入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理者用画面 -->
+    <div id="adminView" class="grid" style="display: none;">
+        <div class="card">
+            <h3>各種設定</h3>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="deadlineSetting">シフト提出期限設定</label>
+                <input type="date" id="deadlineSetting">
+                <button onclick="saveDeadline()" style="margin-top: 10px;">期限を保存</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>スタッフシフト申請一覧</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>申請者</th>
+                            <th>日付</th>
+                            <th>時間帯</th>
+                            <th>休憩</th>
+                            <th>ステータス</th>
+                            <th>アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminShiftTableBody">
+                        <!-- 動的に挿入 -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const API_URL = 'http://127.0.0.1:5001/api';
-    let currentLoggedInUser = ''; let currentLoggedInName = ''; let userRole = ''; let selectedDate = ''; let allShifts = [];
-    
-    let currentYear = new Date().getFullYear();
-    let currentMonth = new Date().getMonth();
+    const API_URL = 'http://127.0.0.1:5001/api'; // バックエンドAPIのURL
 
-    const mainContainer = document.getElementById('mainContainer');
+    let currentLoggedInUser = '';
+    let currentLoggedInName = '';
+    let userRole = '';
+    let allShifts = [];
+    let systemDeadline = ''; // 設定されたシフト提出期限
+
     const loginCard = document.getElementById('loginCard');
     const dashboard = document.getElementById('dashboard');
-    const welcomeText = document.getElementById('welcomeText');
-    const systemSettingsText = document.getElementById('systemSettingsText');
-    const alertBanner = document.getElementById('alertBanner');
-    const calendarGrid = document.getElementById('calendarGrid');
-    const selectedDateText = document.getElementById('selectedDateText');
-    const submitBtn = document.getElementById('submitBtn');
-    const shiftList = document.getElementById('shiftList');
-    const calendarTitle = document.getElementById('calendarTitle');
-    const listTitle = document.getElementById('listTitle');
-    const salarySummaryCard = document.getElementById('salarySummaryCard');
-    const totalMonthlyHours = document.getElementById('totalMonthlyHours');
-    const totalMonthlySalary = document.getElementById('totalMonthlySalary');
-    const adminSummaryCard = document.getElementById('adminSummaryCard');
-    const adminTotalHours = document.getElementById('adminTotalHours');
-    const adminTotalPay = document.getElementById('adminTotalPay');
-    const adminStaffSelectGroup = document.getElementById('adminStaffSelectGroup');
-    const adminSettingsCard = document.getElementById('adminSettingsCard');
-    const payslipCard = document.getElementById('payslipCard');
-    const currentMonthDisplay = document.getElementById('currentMonthDisplay');
-    const dayMemoInput = document.getElementById('dayMemoInput');
-    const saveMemoBtn = document.getElementById('saveMemoBtn');
 
-    // ★ 1週間前判定のためのヘルパー関数
-    function isWithinOneWeekOrPast(dateString) {
-        if (userRole === 'manager') return false; // 管理者は常に制限なし
-
-        const targetDate = new Date(dateString + 'T00:00:00');
-        const today = new Date();
-        today.setHours(0,0,0,0);
-
-        // 今日から7日後の日付を計算
-        const oneWeekLater = new Date(today);
-        oneWeekLater.setDate(today.getDate() + 7);
-
-        // 「過去の日付」または「今日から7日以内」であれば制限対象(true)
-        return targetDate < oneWeekLater;
-    }
-
-    async function handleLogin() {
-        const userId = document.getElementById('userId').value.trim();
+    // ログイン処理
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userId = document.getElementById('userId').value;
         const password = document.getElementById('password').value;
-        if (!userId || !password) { alert('⚠️ ユーザーIDとパスワードを入力してください。'); return; }
 
         try {
             const res = await fetch(`${API_URL}/login`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, password })
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: userId, password: password })
             });
-            const data = await res.json();
-            if (data.status === 'success') {
-                currentLoggedInUser = userId; currentLoggedInName = data.user.name; userRole = data.user.role;
-                welcomeText.innerText = `👋 ようこそ、${currentLoggedInName} さん (${userRole === 'manager' ? '管理者' : 'スタッフ'})`;
-                loginCard.style.display = 'none'; dashboard.style.display = 'block';
-                mainContainer.className = 'container'; document.body.style.alignItems = 'flex-start';
 
-                if (userRole === 'manager') {
-                    calendarTitle.innerText = '⚙️ シフト代理登録・カレンダー確認';
-                    listTitle.innerText = '⚙️ 全スタッフのシフト管理（承認・編集）';
-                    adminStaffSelectGroup.style.display = 'block'; 
-                    salarySummaryCard.style.display = 'none';
-                    adminSummaryCard.style.display = 'block';
-                    adminSettingsCard.style.display = 'block'; 
-                    payslipCard.style.display = 'none';
+            if (res.ok) {
+                const data = await res.json();
+                currentLoggedInUser = userId;
+                currentLoggedInName = data.name || userId;
+                userRole = data.role; // 'admin' または 'staff'
+
+                // 画面遷移
+                loginCard.style.display = 'none';
+                dashboard.style.display = 'block';
+                document.getElementById('loggedInUser').innerText = currentLoggedInName;
+                document.getElementById('userRoleBadge').innerText = userRole === 'admin' ? '管理者' : 'スタッフ';
+
+                // 初期データの同期
+                await fetchDeadline();
+                await fetchShifts();
+
+                if (userRole === 'admin') {
+                    document.getElementById('adminView').style.display = 'grid';
+                    document.getElementById('staffView').style.display = 'none';
                 } else {
-                    calendarTitle.innerText = '📅 希望シフトの申請';
-                    listTitle.innerText = '📋 自分の申請済みシフト一覧';
-                    adminStaffSelectGroup.style.display = 'none'; 
-                    salarySummaryCard.style.display = 'grid';
-                    adminSummaryCard.style.display = 'none';
-                    adminSettingsCard.style.display = 'none';
-                    await checkAndRenderPayslip();
+                    document.getElementById('staffView').style.display = 'grid';
+                    document.getElementById('adminView').style.display = 'none';
                 }
-                await loadSystemSettings(); await fetchShifts(); await checkNotifications();
-            } else { alert('⚠️ ' + data.message); }
-        } catch (err) { alert('⚠️ ログイン通信に失敗しました。'); }
-    }
-
-    async function checkAndRenderPayslip() {
-        try {
-            const res = await fetch(`${API_URL}/payslip`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentLoggedInUser })
-            });
-            const data = await res.json();
-            if (data.status === 'success' && data.details.length > 0) {
-                document.getElementById('payslipTitleMonth').innerText = data.targetMonth;
-                document.getElementById('payslipHours').innerText = data.totalHours;
-                document.getElementById('payslipTotalPay').innerText = `¥${data.totalPay.toLocaleString()}`;
-                const tbody = document.getElementById('payslipTableBody');
-                tbody.innerHTML = '';
-                data.details.forEach(item => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `<td>${item.date}</td><td>${item.time}</td><td>${item.breakTime}分</td><td>${item.hours}h</td><td>¥${item.pay.toLocaleString()}</td>`;
-                    tbody.appendChild(row);
-                });
-                payslipCard.style.display = 'block';
-            } else { payslipCard.style.display = 'none'; }
-        } catch (e) { console.error("明細の取得に失敗しました", e); }
-    }
-
-    async function loadSystemSettings() {
-        const res = await fetch(`${API_URL}/settings`); const data = await res.json();
-        if (data.status === 'success') {
-            systemSettingsText.innerText = `📢 【現在の設定】提出期限: ${data.settings.deadlineDate} | 締め日: ${data.settings.closingDate} | 支給日: ${data.settings.paymentDate}`;
-            if (userRole === 'manager') {
-                document.getElementById('inputDeadline').value = data.settings.deadlineDate;
-                document.getElementById('inputClosing').value = data.settings.closingDate;
-                document.getElementById('inputPayment').value = data.settings.paymentDate;
-            }
-        }
-    }
-
-    async function saveSystemSettings() {
-        const res = await fetch(`${API_URL}/admin/settings-update`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                deadlineDate: document.getElementById('inputDeadline').value,
-                closingDate: document.getElementById('inputClosing').value,
-                paymentDate: document.getElementById('inputPayment').value
-            })
-        });
-        if (res.ok) { alert('✅ システム設定を保存しました。'); await loadSystemSettings(); }
-    }
-
-    async function checkNotifications() {
-        if (userRole === 'manager') return;
-        const res = await fetch(`${API_URL}/notifications`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentLoggedInUser }) });
-        const data = await res.json();
-        if (data.status === 'success' && data.alerts.length > 0) { alertBanner.innerText = data.alerts[0].message; alertBanner.style.display = 'block'; }
-    }
-
-    function changeMonth(offset) {
-        currentMonth += offset;
-        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-        else if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-        
-        generateCalendar();
-        calculateMonthlySummary();
-        renderShiftList();
-    }
-
-    function generateCalendar() {
-        currentMonthDisplay.innerText = `${currentYear}年${String(currentMonth + 1).padStart(2, '0')}月`;
-        document.querySelectorAll('.current-month-label').forEach(el => el.innerText = `${currentMonth + 1}`);
-
-        calendarGrid.innerHTML = '<div class="day-name">日</div><div class="day-name">月</div><div class="day-name">火</div><div class="day-name">水</div><div class="day-name">木</div><div class="day-name">金</div><div class="day-name">土</div>';
-        const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay(); const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-        for (let i = 0; i < firstDayIndex; i++) calendarGrid.appendChild(document.createElement('div'));
-
-        const savedMemos = JSON.parse(localStorage.getItem('shift_system_memos') || '{}');
-        
-        // 今日の年月日を文字列化(YYYY-MM-DD)
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-        for (let day = 1; day <= lastDay; day++) {
-            const dayDiv = document.createElement('div'); dayDiv.className = 'calendar-day'; dayDiv.innerText = day;
-            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            dayDiv.dataset.date = dateStr;
-
-            // ★ 「今日」のマスを強調
-            if (dateStr === todayStr) {
-                dayDiv.classList.add('today');
-                const tBadge = document.createElement('span');
-                tBadge.className = 'today-badge';
-                tBadge.innerText = '🔴今日';
-                dayDiv.appendChild(tBadge);
-            }
-
-            if (savedMemos[dateStr]) {
-                const memoDiv = document.createElement('div');
-                memoDiv.className = 'day-memo';
-                memoDiv.innerText = savedMemos[dateStr];
-                dayDiv.appendChild(memoDiv);
-            }
-
-            const dayShifts = allShifts.filter(s => userRole === 'manager' ? s.date === dateStr : (s.date === dateStr && s.username === currentLoggedInUser));
-            
-            if (dayShifts.length > 0) {
-                const confirmed = dayShifts.find(s => s.status === 'confirmed');
-                if (confirmed) {
-                    dayDiv.classList.add('has-confirmed');
-                    dayDiv.innerHTML += `
-                        <div style="font-size: 0.7rem; color: #047857; font-weight: bold; margin-top: 4px; background: #d1fae5; padding: 2px; border-radius: 4px; text-align: center;">
-                            🕒 ${confirmed.startTime}～${confirmed.endTime}
-                        </div>
-                        <span class="status-dot" style="color:#057a55; margin-top: 2px;">✅ 確定</span>
-                    `;
-                } else {
-                    const applied = dayShifts[0];
-                    dayDiv.classList.add('has-applied');
-                    dayDiv.innerHTML += `
-                        <div style="font-size: 0.7rem; color: #b45309; font-weight: bold; margin-top: 4px; background: #fef3c7; padding: 2px; border-radius: 4px; text-align: center; opacity: 0.9;">
-                            ⏳ ${applied.startTime}～${applied.endTime}
-                        </div>
-                        <span class="status-dot" style="margin-top: 2px;">⏳ 申請中</span>
-                    `;
-                }
-            }
-
-            dayDiv.addEventListener('click', function() {
-                document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
-                this.classList.add('selected'); selectedDate = this.dataset.date;
-                
-                // ★ 1週間前のガード判定をテキストに反映
-                if (isWithinOneWeekOrPast(selectedDate)) {
-                    selectedDateText.innerHTML = `📅 選択中: ${currentMonth + 1}月${day}日 <span style="color:var(--danger); font-size:0.85rem; block; margin-top:2px;">⚠️ 1週間以内の変更は外部で連絡してください</span>`;
-                    submitBtn.disabled = true; // スタッフならボタン非活性（関数内で管理者除外）
-                } else {
-                    selectedDateText.innerText = `📅 選択中: ${currentMonth + 1}月${day}日`;
-                    submitBtn.disabled = false;
-                }
-                
-                // 管理者の場合は常に登録可能にする
-                if (userRole === 'manager') {
-                    submitBtn.disabled = false;
-                }
-
-                saveMemoBtn.disabled = false;
-                dayMemoInput.value = savedMemos[selectedDate] || '';
-            });
-            calendarGrid.appendChild(dayDiv);
-        }
-    }
-
-    function saveDayMemo() {
-        if (!selectedDate) return;
-        const savedMemos = JSON.parse(localStorage.getItem('shift_system_memos') || '{}');
-        const text = dayMemoInput.value.trim();
-        if (text) { savedMemos[selectedDate] = text; } else { delete savedMemos[selectedDate]; }
-        localStorage.setItem('shift_system_memos', JSON.stringify(savedMemos));
-        generateCalendar();
-    }
-
-    async function fetchShifts() {
-        const res = await fetch(`${API_URL}/shifts`); const data = await res.json();
-        if (data.status === 'success') { 
-            allShifts = data.shifts; 
-            generateCalendar(); 
-            calculateMonthlySummary();
-            renderShiftList(); 
-        }
-    }
-
-    function calculateMonthlySummary() {
-        const targetMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-        if (userRole === 'manager') {
-            const monthlyShifts = allShifts.filter(s => s.date.startsWith(targetMonthPrefix));
-            const totalHours = monthlyShifts.reduce((sum, s) => sum + s.calculation.totalHours, 0);
-            const totalPay = monthlyShifts.reduce((sum, s) => sum + s.calculation.totalPay, 0);
-            adminTotalHours.innerText = totalHours.toFixed(1);
-            adminTotalPay.innerText = `¥${totalPay.toLocaleString()}`;
-        } else {
-            const myMonthlyShifts = allShifts.filter(s => s.username === currentLoggedInUser && s.date.startsWith(targetMonthPrefix));
-            const totalHours = myMonthlyShifts.reduce((sum, s) => sum + s.calculation.totalHours, 0);
-            const totalPay = myMonthlyShifts.reduce((sum, s) => sum + s.calculation.totalPay, 0);
-            totalMonthlyHours.innerText = `${totalHours.toFixed(1)} 時間`;
-            totalMonthlySalary.innerText = `¥${totalPay.toLocaleString()}`;
-        }
-    }
-
-    function renderShiftList() {
-        shiftList.innerHTML = '';
-        const targetMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-        let filtered = userRole === 'manager' ? allShifts : allShifts.filter(s => s.username === currentLoggedInUser);
-        filtered = filtered.filter(s => s.date.startsWith(targetMonthPrefix));
-
-        if (filtered.length === 0) { shiftList.innerHTML = `<p style="color:#6b7280;">${currentMonth + 1}月のシフトはまだありません。</p>`; return; }
-
-        filtered.forEach(shift => {
-            const item = document.createElement('div'); item.className = 'shift-item';
-            const calc = shift.calculation;
-            const statusBadge = shift.status === 'confirmed' ? '<span class="badge badge-confirmed">確定</span>' : '<span class="badge badge-applied">承認待ち</span>';
-            
-            // ★ スタッフ側で1週間未満になっているか判定
-            const isLocked = isWithinOneWeekOrPast(shift.date);
-
-            let htmlStr = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong>📅 ${shift.date} (${shift.startTime} ～ ${shift.endTime})</strong> ${statusBadge}
-                </div>
-                <div style="font-size:0.85rem; color:#6b7280; margin-top:4px;">
-                    スタッフ: ${shift.name} | 休憩: ${shift.breakTime}分 | 実働: ${calc.totalHours}h
-                </div>
-                <div class="salary-breakdown">💰 <strong>概算給与: ¥${calc.totalPay.toLocaleString()}</strong></div>
-            `;
-
-            if (userRole === 'manager') {
-                htmlStr += `<div class="admin-actions">`;
-                if (shift.status === 'applied') htmlStr += `<button class="btn-sm btn-success" onclick="confirmShiftWithBreak(${shift.id})">👍 確定する</button>`;
-                htmlStr += `
-                    <button class="btn-sm" style="background:#6b7280;" onclick="openEditPrompt(${shift.id}, '${shift.startTime}', '${shift.endTime}', ${shift.breakTime})">✏️ 編集</button>
-                    <button class="btn-sm btn-danger" onclick="updateShift(${shift.id}, 'delete')">🗑️ 削除</button>
-                </div>`;
             } else {
-                // ★ スタッフ画面：1週間前を過ぎている場合はキャンセルボタンを無効化
-                htmlStr += `<div class="admin-actions">
-                    <button class="btn-sm btn-danger" onclick="cancelShiftByStaff(${shift.id})" ${isLocked ? 'disabled title="1週間以内のため変更不可"' : ''}>
-                        ${isLocked ? '🔒 変更不可' : '❌ キャンセル'}
-                    </button>
-                </div>`;
+                alert('⚠️ ログインに失敗しました。ユーザーIDまたはパスワードが違います。');
             }
-            item.innerHTML = htmlStr; shiftList.appendChild(item);
+        } catch (err) {
+            console.error(err);
+            alert('⚠️ サーバーに接続できません。バックエンドサーバーが起動しているか確認してください。');
+        }
+    });
+
+    // 提出期限の取得
+    async function fetchDeadline() {
+        try {
+            const res = await fetch(`${API_URL}/deadline`);
+            if (res.ok) {
+                const data = await res.json();
+                systemDeadline = data.deadline || '';
+                document.getElementById('deadlineSetting').value = systemDeadline;
+                updateDeadlineWarning(); // 期限表示の判定・更新
+            }
+        } catch (err) {
+            console.error('期限の取得に失敗:', err);
+        }
+    }
+
+    // 提出期限の保存（管理者用）
+    async function saveDeadline() {
+        const newDeadline = document.getElementById('deadlineSetting').value;
+        try {
+            const res = await fetch(`${API_URL}/deadline`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deadline: newDeadline })
+            });
+
+            if (res.ok) {
+                alert('✅ 提出期限を更新しました。');
+                systemDeadline = newDeadline;
+                updateDeadlineWarning(); // 保存後即時で警告表示を更新
+            } else {
+                alert('⚠️ 期限の更新に失敗しました。');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // 提出期限3日前判定とアラートバナーの更新（修正版）
+    function updateDeadlineWarning() {
+        const alertBanner = document.getElementById('deadlineAlert');
+        if (!systemDeadline) {
+            alertBanner.style.display = 'none';
+            return;
+        }
+
+        // 今日の日付（時間を00:00:00にリセット）
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // 設定された期限日の日付（時間を00:00:00にリセット）
+        const [year, month, day] = systemDeadline.split('-');
+        const deadlineDate = new Date(year, month - 1, day);
+
+        // ミリ秒の差分から純粋な「残り日数」を計算
+        const diffTime = deadlineDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        // 残り日数が0日（当日）から3日前の間（0, 1, 2, 3）だけ警告を表示する
+        if (diffDays >= 0 && diffDays <= 3) {
+            let remainText = diffDays === 0 ? "本日が期限です！" : `残り ${diffDays} 日`;
+            
+            alertBanner.style.display = 'block';
+            alertBanner.style.backgroundColor = '#fef3c7';
+            alertBanner.style.borderColor = 'var(--warning-color)';
+            alertBanner.style.color = '#92400e';
+            alertBanner.innerHTML = `⏰ シフトの提出期限が近づいています！【 提出期限: ${systemDeadline} (${remainText}) 】`;
+        } else {
+            // 4日以上前、またはすでに期限を過ぎている場合は表示しない
+            alertBanner.style.display = 'none';
+        }
+    }
+
+    // シフト一覧の取得
+    async function fetchShifts() {
+        try {
+            const res = await fetch(`${API_URL}/shifts`);
+            if (res.ok) {
+                allShifts = await res.json();
+                renderShifts();
+            }
+        } catch (err) {
+            console.error('シフト情報の取得に失敗:', err);
+        }
+    }
+
+    // シフトの描画処理
+    function renderShifts() {
+        const staffBody = document.getElementById('staffShiftTableBody');
+        const adminBody = document.getElementById('adminShiftTableBody');
+
+        staffBody.innerHTML = '';
+        adminBody.innerHTML = '';
+
+        allShifts.forEach(shift => {
+            const statusBadge = getStatusBadge(shift.status);
+            const dateStr = shift.date;
+
+            // 1. スタッフビューの描画 (自分のもののみ表示)
+            if (userRole === 'staff' && shift.username === currentLoggedInUser) {
+                const isLocked = isWithinOneWeekOrPast(dateStr);
+                const actionButton = isLocked 
+                    ? `<span style="color: gray; font-size: 0.9em;">変更不可(直近)</span>`
+                    : `<button class="logout-btn btn-sm" onclick="cancelShiftByStaff('${shift.id}')">❌ キャンセル</button>`;
+
+                const row = `<tr>
+                    <td>${shift.date}</td>
+                    <td>${shift.startTime} 〜 ${shift.endTime}</td>
+                    <td>${shift.breakTime}分</td>
+                    <td>${statusBadge}</td>
+                    <td>${actionButton}</td>
+                </tr>`;
+                staffBody.innerHTML += row;
+            }
+
+            // 2. 管理者ビューの描画 (全員のものを表示)
+            if (userRole === 'admin') {
+                const isApproved = shift.status === 'approved';
+                const isRejected = shift.status === 'rejected';
+
+                const row = `<tr>
+                    <td><strong>${shift.name || shift.username}</strong></td>
+                    <td>${shift.date}</td>
+                    <td>${shift.startTime} 〜 ${shift.endTime}</td>
+                    <td>${shift.breakTime}分</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn-sm btn-approve" onclick="updateShiftStatus('${shift.id}', 'approved')" ${isApproved ? 'disabled' : ''}>承認</button>
+                            <button class="btn-sm btn-reject" onclick="updateShiftStatus('${shift.id}', 'rejected')" ${isRejected ? 'disabled' : ''}>却下</button>
+                            <button class="btn-sm" style="background-color: var(--primary-color);" onclick="openEditPrompt('${shift.id}', '${shift.startTime}', '${shift.endTime}', '${shift.breakTime}')">編集</button>
+                        </div>
+                    </td>
+                </tr>`;
+                adminBody.innerHTML += row;
+            }
         });
     }
 
-    async function confirmShiftWithBreak(shiftId) {
-        const breakTime = document.getElementById('breakTime').value;
-        const res = await fetch(`${API_URL}/admin/shift-update`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shiftId, action: 'confirm', breakTime })
-        });
-        if (!res.ok) { const d = await res.json(); alert(d.message); return; }
-        await fetchShifts();
+    // ステータスバッジの生成
+    function getStatusBadge(status) {
+        if (status === 'approved') return `<span class="badge badge-approved">承認済</span>`;
+        if (status === 'rejected') return `<span class="badge badge-rejected">却下</span>`;
+        return `<span class="badge badge-pending">保留中</span>`;
     }
 
-    async function submitShift() {
+    // 直近1週間（または過去の日付）かどうか判定するヘルパー関数
+    function isWithinOneWeekOrPast(dateStr) {
+        if (!dateStr) return false;
+        const [year, month, day] = dateStr.split('-');
+        const targetDate = new Date(year, month - 1, day);
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // 過去の日付
+        if (targetDate < today) return true;
+
+        // 今から1週間後までの日数制限
+        const oneWeekLater = new Date();
+        oneWeekLater.setDate(today.getDate() + 7);
+        return targetDate <= oneWeekLater;
+    }
+
+    // スタッフ：新規シフト申請
+    document.getElementById('shiftSubmitForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // シフト提出期限を過ぎている場合は申請をブロック
+        if (systemDeadline) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const [year, month, day] = systemDeadline.split('-');
+            const deadlineDate = new Date(year, month - 1, day);
+            deadlineDate.setHours(23, 59, 59, 999); // 期限日の23:59:59まで許可
+
+            if (today > deadlineDate) {
+                alert('⚠️ 提出期限を過ぎているため、新しいシフトを提出できません。');
+                return;
+            }
+        }
+
+        const date = document.getElementById('shiftDate').value;
         const startTime = document.getElementById('startTime').value;
         const endTime = document.getElementById('endTime').value;
         const breakTime = document.getElementById('breakTime').value;
-        let username = currentLoggedInUser;
-        
-        if (userRole === 'manager') {
-            username = document.getElementById('targetStaffId').value.trim();
-            if (!username) { alert('⚠️ 対象スタッフIDを入力してください。'); return; }
-        } else {
-            // 安全策としてスタッフ側で直前申請をブロック
-            if (isWithinOneWeekOrPast(selectedDate)) { alert('⚠️ 1週間以内のシフト変更・申請はシステムからは行えません。'); return; }
+
+        if (isWithinOneWeekOrPast(date)) {
+            alert('⚠️ 1週間以内の日付、または過去の日付にはシフト申請できません。');
+            return;
         }
 
-        const res = await fetch(`${API_URL}/shift-submit`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, date: selectedDate, startTime, endTime, breakTime })
-        });
-        if (!res.ok) { const d = await res.json(); alert(d.message); return; }
-        alert('✅ シフトを登録・申請しました。'); await fetchShifts();
+        try {
+            const res = await fetch(`${API_URL}/shifts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: currentLoggedInUser,
+                    name: currentLoggedInName,
+                    date,
+                    startTime,
+                    endTime,
+                    breakTime
+                })
+            });
+
+            if (res.ok) {
+                alert('✅ シフトを申請しました。');
+                document.getElementById('shiftSubmitForm').reset();
+                document.getElementById('breakTime').value = '0';
+                await fetchShifts();
+            } else {
+                alert('⚠️ 申請に失敗しました。');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    // 管理者：シフト承認・却下
+    async function updateShiftStatus(shiftId, status) {
+        try {
+            const res = await fetch(`${API_URL}/admin/shift-update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shiftId, action: status })
+            });
+
+            if (res.ok) {
+                alert(`✅ シフトを${status === 'approved' ? '承認' : '却下'}しました。`);
+                await fetchShifts();
+            } else {
+                alert('⚠️ 更新に失敗しました。');
+            }
+        } catch (err) {
+            console.error(err);
+        }
     }
 
-    async function updateShift(shiftId, action) {
-        const res = await fetch(`${API_URL}/admin/shift-update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shiftId, action }) });
-        if (res.ok) await fetchShifts();
-    }
-
+    // 管理者：シフト編集
     async function openEditPrompt(shiftId, currentStart, currentEnd, currentBreak) {
-        const newStart = prompt("新しい開始時間 (HH:MM)", currentStart); if (!newStart) return;
-        const newEnd = prompt("新しい終了時間 (HH:MM)", currentEnd); if (!newEnd) return;
-        const newBreak = prompt("新しい休憩時間 (分)", currentBreak); if (newBreak === null) return;
+        const newStart = prompt("新しい開始時間 (HH:MM)", currentStart);
+        if (!newStart) return;
+        const newEnd = prompt("新しい終了時間 (HH:MM)", currentEnd);
+        if (!newEnd) return;
+        const newBreak = prompt("新しい休憩時間 (分)", currentBreak);
+        if (newBreak === null) return;
 
-        const res = await fetch(`${API_URL}/admin/shift-update`, { 
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ shiftId, action: 'edit', startTime: newStart, endTime: newEnd, breakTime: newBreak }) 
-        });
-        if (!res.ok) { const d = await res.json(); alert(d.message); return; }
-        await fetchShifts();
+        try {
+            const res = await fetch(`${API_URL}/admin/shift-update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    shiftId, 
+                    action: 'edit', 
+                    startTime: newStart, 
+                    endTime: newEnd, 
+                    breakTime: newBreak 
+                })
+            });
+            if (res.ok) {
+                alert('✅ シフトを編集しました。');
+                await fetchShifts();
+            } else {
+                const d = await res.json();
+                alert('⚠️ ' + (d.message || '編集に失敗しました'));
+            }
+        } catch (err) {
+            console.error(err);
+        }
     }
 
+    // スタッフ：シフト申請のキャンセル
     async function cancelShiftByStaff(shiftId) {
-        const res = await fetch(`${API_URL}/shift-cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shiftId }) });
-        if (res.ok) { alert('✅ キャンセルしました。'); await fetchShifts(); }
-        else { const d = await res.json(); alert(d.message); }
+        if (!confirm('このシフト申請をキャンセルしてもよろしいですか？')) return;
+
+        // 型変換（==）で、文字列のshiftIdと数値のs.idを確実にマッチさせる
+        const shift = allShifts.find(s => s.id == shiftId);
+        if (shift && isWithinOneWeekOrPast(shift.date)) {
+            alert('⚠️ 1週間以内のシフトは変更・キャンセルできません。');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/admin/shift-update`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ shiftId, action: 'delete' }) 
+            });
+            
+            if (res.ok) {
+                alert('✅ シフトをキャンセルしました。');
+                await fetchShifts();
+            } else {
+                alert('⚠️ キャンセルに失敗しました。');
+            }
+        } catch (err) {
+            console.error(err);
+        }
     }
 
+    // ログアウト処理
     function handleLogout() {
-        currentLoggedInUser = ''; currentLoggedInName = ''; userRole = ''; dashboard.style.display = 'none'; loginCard.style.display = 'block';
-        mainContainer.className = 'login-container'; document.body.style.alignItems = 'center';
+        currentLoggedInUser = '';
+        currentLoggedInName = '';
+        userRole = '';
+        allShifts = [];
+        systemDeadline = '';
+        
+        document.getElementById('userId').value = '';
+        document.getElementById('password').value = '';
+        
+        loginCard.style.display = 'block';
+        dashboard.style.display = 'none';
+        document.getElementById('deadlineAlert').style.display = 'none';
+        
+        alert('👋 ログアウトしました。');
     }
 </script>
 </body>
