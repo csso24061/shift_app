@@ -15,6 +15,30 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         
+        /* 🔒 ログイン画面のスタイル */
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .login-box h2 { color: #1c64f2; margin-bottom: 20px; }
+        .login-box p { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+        .login-input { width: 100%; padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 15px; text-align: center; }
+        
+        /* メインアプリ表示切り替え */
+        .app-content { display: none; }
+        .app-content.active { display: block; }
+        .login-content { display: block; }
+        .login-content.hidden { display: none; }
+
+        /* ヘッダーとユーザー情報 */
+        .user-info-bar { display: flex; justify-content: space-between; align-items: center; background: #f0f5ff; padding: 10px 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #1c64f2; }
+        .user-name { font-weight: bold; color: #1e429f; }
+        .logout-btn { background: #e5e7eb; color: #374151; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
+        .logout-btn:hover { background: #d1d5db; }
+
         /* 🔄 モード切り替えタブ */
         .mode-tab-container {
             display: flex;
@@ -82,7 +106,7 @@
         .selected-date-display { font-size: 1.1rem; font-weight: bold; color: #1c64f2; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f5ff; }
         .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
         .form-group label { margin-bottom: 5px; font-weight: bold; }
-        select, input[type="text"] { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+        select { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
         .error-banner { background: #fde8e8; color: #e02424; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; }
         .submit-btn { width: 100%; padding: 12px; background: #1c64f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
         .submit-btn:hover { background: #1a56db; }
@@ -132,119 +156,197 @@
 <body>
 
     <div class="container">
-        <!-- 🔄 モード切り替えタブ -->
-        <div class="mode-tab-container">
-            <button class="mode-tab active" id="tabStaff">👤 スタッフ用（提出）</button>
-            <button class="mode-tab" id="tabManager">👑 店長用（管理・集計）</button>
-        </div>
 
-        <!-- ================= スタッフモード画面 ================= -->
-        <div id="contentStaff" class="mode-content active">
-            <h1>📅 希望シフト提出</h1>
-            <p class="subtitle">カレンダーから日付を選んでシフトを送信してください</p>
-
-            <div class="calendar-container">
-                <div class="calendar-header">
-                    <span id="calendarMonth">2026年 7月</span>
-                </div>
-                <div class="calendar-grid" id="calendarGrid">
-                    <div class="day-name">日</div>
-                    <div class="day-name">月</div>
-                    <div class="day-name">火</div>
-                    <div class="day-name">水</div>
-                    <div class="day-name">木</div>
-                    <div class="day-name">金</div>
-                    <div class="day-name">土</div>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <div class="selected-date-display" id="selectedDateText">👉 カレンダーの日付を選択してください</div>
-                
-                <form id="shiftForm">
-                    <div class="form-group">
-                        <label>👤 あなたのお名前:</label>
-                        <input type="text" id="staffName" placeholder="例：山田 太郎" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>⏰ 開始時間:</label>
-                        <select id="startTime"></select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>⏰ 終了時間:</label>
-                        <select id="endTime"></select>
-                    </div>
-
-                    <div id="errorArea"></div>
-
-                    <button type="submit" class="submit-btn" id="submitBtn" disabled>希望シフトを送信</button>
+        <!-- ================= 🔑 ログイン画面 ================= -->
+        <div id="loginSection" class="login-content">
+            <div class="login-box">
+                <h2>🔐 システムログイン</h2>
+                <p>名前を入力してログインしてください。<br>（店長画面に入る場合は <strong>admin</strong> と入力してください）</p>
+                <form id="loginForm">
+                    <input type="text" id="loginUsername" class="login-input" placeholder="お名前を入力（例：山田太郎）" required autocomplete="off">
+                    <button type="submit" class="submit-btn">ログインする</button>
                 </form>
             </div>
-
-            <div id="successArea"></div>
         </div>
 
-        <!-- ================= 店長モード画面 ================= -->
-        <div id="contentManager" class="mode-content">
-            <h1>👑 シフト管理＆人件費集計</h1>
-            <p class="subtitle">提出されたシフトの状況と、概算人件費の集計データです</p>
+        <!-- ================= 📅 メインアプリ画面 ================= -->
+        <div id="appSection" class="app-content">
+            
+            <!-- 👤 ユーザー情報バー -->
+            <div class="user-info-bar">
+                <div>ログイン中: <span id="currentUserDisplay" class="user-name">未ログイン</span> さん</div>
+                <button id="logoutBtn" class="logout-btn">ログアウト</button>
+            </div>
 
-            <div class="manager-summary">
-                <div class="summary-card">
-                    <h3>総労働時間</h3>
-                    <p id="totalHoursDisplay">0.0 時間</p>
+            <!-- 🔄 モード切り替えタブ -->
+            <div class="mode-tab-container" id="tabContainer">
+                <button class="mode-tab active" id="tabStaff">👤 スタッフ用（提出）</button>
+                <button class="mode-tab" id="tabManager">👑 店長用（管理・集計）</button>
+            </div>
+
+            <!-- ================= スタッフモード画面 ================= -->
+            <div id="contentStaff" class="mode-content active">
+                <h1>📅 希望シフト提出</h1>
+                <p class="subtitle">カレンダーから日付を選んでシフトを送信してください</p>
+
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <span id="calendarMonth">2026年 7月</span>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <div class="day-name">日</div>
+                        <div class="day-name">月</div>
+                        <div class="day-name">火</div>
+                        <div class="day-name">水</div>
+                        <div class="day-name">木</div>
+                        <div class="day-name">金</div>
+                        <div class="day-name">土</div>
+                    </div>
                 </div>
-                <div class="summary-card">
-                    <h3>想定総人件費</h3>
-                    <p id="totalCostDisplay" class="total-cost">¥0</p>
+
+                <div class="form-section">
+                    <div class="selected-date-display" id="selectedDateText">👉 カレンダーの日付を選択してください</div>
+                    
+                    <form id="shiftForm">
+                        <div class="form-group">
+                            <label>⏰ 開始時間:</label>
+                            <select id="startTime"></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>⏰ 終了時間:</label>
+                            <select id="endTime"></select>
+                        </div>
+
+                        <div id="errorArea"></div>
+
+                        <button type="submit" class="submit-btn" id="submitBtn" disabled>希望シフトを送信</button>
+                    </form>
+                </div>
+
+                <div id="successArea"></div>
+
+                <!-- 👤 自分専用の履歴リスト -->
+                <div class="history-section">
+                    <div class="history-title">📋 あなたの提出済みシフト一覧</div>
+                    <div id="staffHistoryList" class="history-list"></div>
                 </div>
             </div>
 
-            <div class="history-section">
-                <div class="history-title">📋 提出済みシフト一覧 (全員分)</div>
-                <div id="managerHistoryList" class="history-list"></div>
+            <!-- ================= 店長モード画面 ================= -->
+            <div id="contentManager" class="mode-content">
+                <h1>👑 シフト管理＆人件費集計</h1>
+                <p class="subtitle">提出されたシフトの状況と、概算人件費の集計データです</p>
+
+                <div class="manager-summary">
+                    <div class="summary-card">
+                        <h3>総労働時間</h3>
+                        <p id="totalHoursDisplay">0.0 時間</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>想定総人件費</h3>
+                        <p id="totalCostDisplay" class="total-cost">¥0</p>
+                    </div>
+                </div>
+
+                <div class="history-section">
+                    <div class="history-title">📋 提出済みシフト一覧 (全員分)</div>
+                    <div id="managerHistoryList" class="history-list"></div>
+                </div>
             </div>
+
         </div>
 
     </div>
 
     <script>
+        // セクションの切り替え用
+        const loginSection = document.getElementById('loginSection');
+        const appSection = document.getElementById('appSection');
+        const loginForm = document.getElementById('loginForm');
+        const loginUsername = document.getElementById('loginUsername');
+        const currentUserDisplay = document.getElementById('currentUserDisplay');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // タブ切り替え用の要素取得
+        const tabContainer = document.getElementById('tabContainer');
         const tabStaff = document.getElementById('tabStaff');
         const tabManager = document.getElementById('tabManager');
         const contentStaff = document.getElementById('contentStaff');
         const contentManager = document.getElementById('contentManager');
 
+        // シフト関連の要素取得
         const startTimeSelect = document.getElementById('startTime');
         const endTimeSelect = document.getElementById('endTime');
         const selectedDateText = document.getElementById('selectedDateText');
         const submitBtn = document.getElementById('submitBtn');
         const calendarGrid = document.getElementById('calendarGrid');
-        const staffNameInput = document.getElementById('staffName');
         
+        const staffHistoryList = document.getElementById('staffHistoryList');
         const managerHistoryList = document.getElementById('managerHistoryList');
         const totalHoursDisplay = document.getElementById('totalHoursDisplay');
         const totalCostDisplay = document.getElementById('totalCostDisplay');
 
-        let allSubmittedShifts = [];
+        // ログイン中のユーザー名
+        let currentLoggedInUser = "";
         let selectedDate = "";
 
-        // タブ切り替え
-        tabStaff.addEventListener('click', () => {
+        // 🔑 ログイン処理
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = loginUsername.value.trim();
+            if (!username) return;
+
+            currentLoggedInUser = username;
+            currentUserDisplay.innerText = username;
+
+            // ログイン画面を隠し、メイン画面を表示
+            loginSection.classList.add('hidden');
+            appSection.classList.add('active');
+
+            // 👑 権限設定（"admin" または "店長" でログインした場合のみ店長タブを使えるようにする）
+            if (username.toLowerCase() === 'admin' || username === '店長') {
+                tabContainer.style.display = 'flex';  // タブを表示
+                switchToStaffMode(); // 初期表示はスタッフ画面
+            } else {
+                tabContainer.style.display = 'none';  // 一般ユーザーにはタブを非表示にして店長画面にいけないようにする
+                switchToStaffMode();
+            }
+
+            // カレンダーと履歴を再読み込み
+            generateCalendar();
+            fetchAndRenderShifts();
+        });
+
+        // 🔓 ログアウト処理
+        logoutBtn.addEventListener('click', () => {
+            currentLoggedInUser = "";
+            loginUsername.value = "";
+            appSection.classList.remove('active');
+            loginSection.classList.remove('hidden');
+            document.getElementById('successArea').innerHTML = '';
+            document.getElementById('errorArea').innerHTML = '';
+        });
+
+        // 🔄 モード切り替え関数
+        function switchToStaffMode() {
             tabStaff.classList.add('active');
             tabManager.classList.remove('active');
             contentStaff.classList.add('active');
             contentManager.classList.remove('active');
-        });
+            fetchAndRenderShifts();
+        }
 
-        tabManager.addEventListener('click', () => {
+        function switchToManagerMode() {
             tabManager.classList.add('active');
             tabStaff.classList.remove('active');
             contentManager.classList.add('active');
             contentStaff.classList.remove('active');
-            updateManagerDashboard();
-        });
+            fetchAndRenderShifts();
+        }
+
+        tabStaff.addEventListener('click', switchToStaffMode);
+        tabManager.addEventListener('click', switchToManagerMode);
 
         // 時間プルダウン生成
         for (let hour = 0; hour < 24; hour++) {
@@ -260,6 +362,15 @@
 
         // カレンダー生成
         function generateCalendar() {
+            calendarGrid.innerHTML = `
+                <div class="day-name">日</div>
+                <div class="day-name">月</div>
+                <div class="day-name">火</div>
+                <div class="day-name">水</div>
+                <div class="day-name">木</div>
+                <div class="day-name">金</div>
+                <div class="day-name">土</div>
+            `;
             const now = new Date();
             const year = now.getFullYear();
             const month = now.getMonth();
@@ -298,50 +409,80 @@
                 calendarGrid.appendChild(dayDiv);
             }
         }
-        generateCalendar();
 
-        // 店長集計の更新
-        function updateManagerDashboard() {
-            managerHistoryList.innerHTML = '';
-            
-            if (allSubmittedShifts.length === 0) {
-                managerHistoryList.innerHTML = '<p style="color: #666; text-align: center;">まだ提出されたシフトはありません。</p>';
-                totalHoursDisplay.innerText = "0.0 時間";
-                totalCostDisplay.innerText = "¥0";
-                return;
+        // 🔄 サーバーから最新のシフトデータを取得して画面に表示する関数
+        async function fetchAndRenderShifts() {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/shifts');
+                const result = await response.json();
+                
+                if (result.status === "success") {
+                    const shifts = result.shifts;
+                    
+                    // 1. 【スタッフ用】ログイン中の本人だけのシフト履歴をフィルタリングして表示
+                    staffHistoryList.innerHTML = '';
+                    const myShifts = shifts.filter(s => s.username === currentLoggedInUser);
+                    
+                    if (myShifts.length === 0) {
+                        staffHistoryList.innerHTML = '<p style="color: #666; text-align: center; font-size: 0.9rem;">まだ提出したシフトはありません。</p>';
+                    } else {
+                        myShifts.forEach(shift => {
+                            const dateParts = shift.date.split('-');
+                            const formattedDate = dateParts.length === 3 ? `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日` : shift.date;
+                            
+                            const item = document.createElement('div');
+                            item.className = 'history-item';
+                            item.innerHTML = `
+                                <span class="history-date">${formattedDate}</span>
+                                <span class="history-time">${shift.startTime} ～ ${shift.endTime} (${shift.calculation.totalHours}時間)</span>
+                                <span class="history-pay">概算: ¥${shift.calculation.totalPay.toLocaleString()}</span>
+                            `;
+                            staffHistoryList.appendChild(item);
+                        });
+                    }
+
+                    // 2. 【店長用】全スタッフのデータを集計して表示
+                    if (currentLoggedInUser.toLowerCase() === 'admin' || currentLoggedInUser === '店長') {
+                        managerHistoryList.innerHTML = '';
+                        let totalHours = 0;
+                        let totalCost = 0;
+
+                        if (shifts.length === 0) {
+                            managerHistoryList.innerHTML = '<p style="color: #666; text-align: center;">まだ誰も提出していません。</p>';
+                        } else {
+                            shifts.forEach(shift => {
+                                totalHours += shift.calculation.totalHours;
+                                totalCost += shift.calculation.totalPay;
+
+                                const dateParts = shift.date.split('-');
+                                const formattedDate = dateParts.length === 3 ? `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日` : shift.date;
+
+                                const item = document.createElement('div');
+                                item.className = 'history-item';
+                                item.innerHTML = `
+                                    <div class="history-left">
+                                        <span class="history-date">${formattedDate}</span>
+                                        <span class="history-name">${shift.username}</span>
+                                    </div>
+                                    <span class="history-time">${shift.startTime} ～ ${shift.endTime} (${shift.calculation.totalHours}h)</span>
+                                    <span class="history-pay">¥${shift.calculation.totalPay.toLocaleString()}</span>
+                                `;
+                                managerHistoryList.appendChild(item);
+                            });
+                        }
+                        totalHoursDisplay.innerText = `${totalHours.toFixed(1)} 時間`;
+                        totalCostDisplay.innerText = `¥${totalCost.toLocaleString()}`;
+                    }
+                }
+            } catch (err) {
+                console.error("データ取得エラー:", err);
             }
-
-            let totalHours = 0;
-            let totalCost = 0;
-
-            allSubmittedShifts.forEach(shift => {
-                totalHours += shift.calculation.totalHours;
-                totalCost += shift.calculation.totalPay;
-
-                const dateParts = shift.date.split('-');
-                const formattedDate = dateParts.length === 3 ? `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日` : shift.date;
-
-                const item = document.createElement('div');
-                item.className = 'history-item';
-                item.innerHTML = `
-                    <div class="history-left">
-                        <span class="history-date">${formattedDate}</span>
-                        <span class="history-name">${shift.name}</span>
-                    </div>
-                    <span class="history-time">${shift.startTime} ～ ${shift.endTime} (${shift.calculation.totalHours}h)</span>
-                    <span class="history-pay">¥${shift.calculation.totalPay.toLocaleString()}</span>
-                `;
-                managerHistoryList.appendChild(item);
-            });
-
-            totalHoursDisplay.innerText = `${totalHours.toFixed(1)} 時間`;
-            totalCostDisplay.innerText = `¥${totalCost.toLocaleString()}`;
         }
 
-        // 送信
+        // 📤 シフト送信
         document.getElementById('shiftForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!selectedDate) return;
+            if (!selectedDate || !currentLoggedInUser) return;
 
             const errorArea = document.getElementById('errorArea');
             const successArea = document.getElementById('successArea');
@@ -349,6 +490,7 @@
             successArea.innerHTML = '';
 
             const payload = {
+                username: currentLoggedInUser,  // ログイン中の名前をセットして送信
                 date: selectedDate,
                 startTime: startTimeSelect.value,
                 endTime: endTimeSelect.value
@@ -366,20 +508,10 @@
                 if (!response.ok) {
                     errorArea.innerHTML = `<div class="error-banner">${result.message}</div>`;
                 } else {
-                    const newShiftData = {
-                        name: staffNameInput.value,
-                        date: result.data.date,
-                        startTime: result.data.startTime,
-                        endTime: result.data.endTime,
-                        calculation: result.data.calculation
-                    };
-                    
-                    allSubmittedShifts.unshift(newShiftData);
-
                     const calc = result.data.calculation;
                     successArea.innerHTML = `
                         <div class="success-box">
-                            <h3>✅ ${newShiftData.name} さんのシフト希望を受け付けました。</h3>
+                            <h3>✅ シフト希望を受け付けました。</h3>
                             <p><strong>勤務時間:</strong> ${result.data.startTime} ～ ${result.data.endTime} (${calc.totalHours}時間)</p>
                             <div class="salary-spec">
                                 <div class="salary-row"><span>基本給 (時給¥${calc.baseRate}):</span> <span>¥${calc.basicPay.toLocaleString()}</span></div>
@@ -390,7 +522,8 @@
                         </div>
                     `;
 
-                    staffNameInput.value = '';
+                    // 送信後、リストを再描画
+                    fetchAndRenderShifts();
                 }
             } catch (err) {
                 errorArea.innerHTML = `<div class="error-banner">⚠️ Flaskサーバーに接続できません。app.pyが起動しているか確認してください。</div>`;
