@@ -41,7 +41,11 @@
         .logout-btn:hover { background: #d1d5db; }
 
         /* 📢 運用情報バナー */
-        .schedule-banner { background: #fff8e1; border-left: 4px solid #ffb300; color: #b78103; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; font-weight: bold; line-height: 1.4; }
+        .schedule-banner { background: #fff8e1; border-left: 4px solid #ffb300; color: #b78103; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; font-weight: bold; line-height: 1.4; }
+
+        /* 🚨 自動リマインド通知エリア */
+        .alert-box { background: #fde8e8; border: 1px solid #f8b4b4; color: #9b1c1c; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; font-weight: bold; line-height: 1.4; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.9; } }
 
         /* 🔄 モード切り替えタブ */
         .mode-tab-container { display: flex; background: #e5e7eb; border-radius: 6px; padding: 4px; margin-bottom: 25px; }
@@ -81,7 +85,6 @@
         .summary-card p { margin: 0; font-size: 1.6rem; font-weight: bold; color: #1c64f2; }
         .summary-card p.total-cost { color: #e02424; }
 
-        /* 設定管理パネル */
         .settings-panel { background: #f3f4f6; border: 1px solid #e5e7eb; padding: 20px; border-radius: 6px; margin-bottom: 25px; }
         .settings-panel h2 { margin-top: 0; font-size: 1.1rem; color: #1e429f; margin-bottom: 15px; }
 
@@ -140,6 +143,9 @@
                 💰 給与締め日：<span id="bannerClosing">-</span> | 🏦 振込予定日：<span id="bannerPayment">-</span>
             </div>
 
+            <!-- 🚨 自動リマインド通知エリア (新規追加) -->
+            <div id="notificationArea"></div>
+
             <!-- 🔄 モード切り替えタブ -->
             <div class="mode-tab-container" id="tabContainer">
                 <button class="mode-tab active" id="tabStaff">👤 スタッフ用（提出）</button>
@@ -192,7 +198,7 @@
                 <h1>👑 シフト管理＆人件費集計</h1>
                 <p class="subtitle">提出されたシフトの状況と、概算人件費の集計データです</p>
 
-                <!-- 🛠️ スケジュール設定パネル（新規追加） -->
+                <!-- 🛠️ スケジュール設定パネル -->
                 <div class="settings-panel">
                     <h2>⚙️ 運用スケジュール設定</h2>
                     <form id="settingsForm">
@@ -262,7 +268,7 @@
         const totalHoursDisplay = document.getElementById('totalHoursDisplay');
         const totalCostDisplay = document.getElementById('totalCostDisplay');
 
-        // スケジュールUI用の要素（新規追加）
+        // スケジュールUI用の要素
         const bannerDeadline = document.getElementById('bannerDeadline');
         const bannerClosing = document.getElementById('bannerClosing');
         const bannerPayment = document.getElementById('bannerPayment');
@@ -270,6 +276,7 @@
         const inputClosing = document.getElementById('inputClosing');
         const inputPayment = document.getElementById('inputPayment');
         const settingsForm = document.getElementById('settingsForm');
+        const notificationArea = document.getElementById('notificationArea');
 
         let currentLoggedInUser = "";
         let currentLoggedInRole = "";
@@ -283,19 +290,40 @@
                 if (result.status === "success") {
                     const settings = result.settings;
                     
-                    // バナー（共通表示）の更新
                     const dl = new Date(settings.deadlineDate);
                     bannerDeadline.innerText = `${dl.getFullYear()}年${dl.getMonth()+1}月${dl.getDate()}日`;
                     bannerClosing.innerText = settings.closingDate;
                     bannerPayment.innerText = settings.paymentDate;
 
-                    // 管理者フォームの初期値反映
                     inputDeadline.value = settings.deadlineDate;
                     inputClosing.value = settings.closingDate;
                     inputPayment.value = settings.paymentDate;
                 }
             } catch (err) {
                 console.error("設定取得エラー:", err);
+            }
+        }
+
+        // 🔔 3日前リマインド通知を取得・表示する処理 (新規追加)
+        async function checkNotifications() {
+            if (!currentLoggedInUser || currentLoggedInRole === 'manager') {
+                notificationArea.innerHTML = '';
+                return;
+            }
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/notifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentLoggedInUser })
+                });
+                const result = await response.json();
+                if (result.status === "success" && result.alerts.length > 0) {
+                    notificationArea.innerHTML = result.alerts.map(a => `<div class="alert-box">${a.message}</div>`).join('');
+                } else {
+                    notificationArea.innerHTML = '';
+                }
+            } catch (err) {
+                console.error("通知取得エラー:", err);
             }
         }
 
@@ -317,7 +345,8 @@
                 const result = await response.json();
                 if (response.ok) {
                     alert("✅ 運用スケジュール設定を更新しました。");
-                    fetchSettings(); // 再描画
+                    await fetchSettings();
+                    checkNotifications();
                 } else {
                     alert("⚠️ エラー: " + result.message);
                 }
@@ -354,7 +383,6 @@
                     loginSection.classList.add('hidden');
                     appSection.classList.add('active');
 
-                    // 👑 権限による画面制御
                     if (currentLoggedInRole === 'manager') {
                         tabContainer.style.display = 'flex';
                         switchToManagerMode(); 
@@ -364,7 +392,8 @@
                     }
 
                     generateCalendar();
-                    fetchSettings();  // 運用スケジュールを反映
+                    await fetchSettings();
+                    checkNotifications(); // ログイン時にリマインド対象か確認
                     fetchAndRenderShifts();
                 }
             } catch (err) {
@@ -382,6 +411,7 @@
             loginSection.classList.remove('hidden');
             document.getElementById('successArea').innerHTML = '';
             document.getElementById('errorArea').innerHTML = '';
+            notificationArea.innerHTML = '';
         });
 
         function switchToStaffMode() {
@@ -390,6 +420,7 @@
             contentStaff.classList.add('active');
             contentManager.classList.remove('active');
             fetchAndRenderShifts();
+            checkNotifications();
         }
 
         function switchToManagerMode() {
@@ -463,7 +494,6 @@
                 if (result.status === "success") {
                     const shifts = result.shifts;
                     
-                    // 1. スタッフ個人履歴の描画
                     staffHistoryList.innerHTML = '';
                     const myShifts = shifts.filter(s => s.username === currentLoggedInUser);
                     
@@ -484,7 +514,6 @@
                         });
                     }
 
-                    // 2. 管理者用全履歴の描画
                     if (currentLoggedInRole === 'manager') {
                         managerHistoryList.innerHTML = '';
                         let totalHours = 0;
@@ -562,7 +591,8 @@
                             </div>
                         </div>
                     `;
-                    fetchAndRenderShifts();
+                    await fetchAndRenderShifts();
+                    checkNotifications(); // シフト提出に成功したため、リマインド通知を非表示に更新
                 }
             } catch (err) {
                 errorArea.innerHTML = `<div class="error-banner">⚠️ サーバーエラーが発生しました。</div>`;
