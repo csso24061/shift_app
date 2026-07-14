@@ -28,7 +28,7 @@ class Shift(db.Model):
     date = db.Column(db.String(20), nullable=False) # YYYY-MM-DD
     start_time = db.Column(db.String(10), nullable=False)
     end_time = db.Column(db.String(10), nullable=False)
-    break_time = db.Column(db.Integer, default=0) # 休憩時間（分）※新設
+    break_time = db.Column(db.Integer, default=0) # 休憩時間（分）
     status = db.Column(db.String(20), default='applied')
 
 class SystemSetting(db.Model):
@@ -39,18 +39,70 @@ class SystemSetting(db.Model):
     payment_date = db.Column(db.String(50), default='翌月15日')
 
 # ----------------------------------------
-# 補助関数（給与計算：休憩時間をマイナスする）
+# 安全な時間・給与計算ロジック
 # ----------------------------------------
-def calculate_pay(start_time, end_time, break_minutes):
+def parse_hours(start_time, end_time, break_minutes):
+    """開始・終了・休憩時間から実労働時間を安全に計算する"""
     try:
         fmt = '%H:%M'
         tdelta = datetime.strptime(end_time, fmt) - datetime.strptime(start_time, fmt)
-        # 総時間（時間単位）から休憩時間（分を時間に変換）を引く
-        hours = max(0.0, (tdelta.total_seconds() / 3600) - (break_minutes / 60))
-    except:
-        hours = 0.0
+        
+        # 休憩時間を安全に数値に変換
+        try:
+            b_min = int(break_minutes) if break_minutes is not None else 0
+        except (ValueError, TypeError):
+            b_min = 0
+            
+        hours = max(0.0, (tdelta.total_seconds() / 3600) - (b_min / 60))
+        return round(hours, 1)
+    except Exception as e:
+        print(f"Time parse error: {e}")
+        return 0.0
+
+def calculate_pay(start_time, end_time, break_minutes):
+    """実労働時間と給与を計算する"""
+    hours = parse_hours(start_time, end_time, break_minutes)
     basic_pay = int(hours * 1200)
-    return round(hours, 1), basic_pay
+    return hours, basic_pay
+
+def get_week_range(date_str):
+    """指定された日付（YYYY-MM-DD）が含まれる週（月曜日〜日曜日）の日付リストを返す"""
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d')
+        start_of_week = target_date - timedelta(days=target_date.weekday()) # 0=月曜
+        return [(start_of_week + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
+    except Exception as e:
+        print(f"Week range error: {e}")
+        return [date_str]
+
+def check_labor_limits(username, date_str, start_time, end_time, break_time, exclude_shift_id=None):
+    """法定労働時間（1日8時間・週40時間）を超えないかチェックする"""
+    new_hours = parse_hours(start_time, end_time, break_time)
+    
+    # 1. 1日8時間チェック
+    day_shifts = Shift.query.filter(Shift.username == username, Shift.date == date_str).all()
+    day_total = 0.0
+    for s in day_shifts:
+        if exclude_shift_id and s.id == exclude_shift_id:
+            continue
+        day_total += parse_hours(s.start_time, s.end_time, s.break_time)
+    
+    if (day_total + new_hours) > 8.0:
+        return False, f"【労働基準法違反】1日の実労働時間が8時間を超えます（合計: {day_total + new_hours}時間になるため登録できません）"
+
+    # 2. 週40時間チェック
+    week_days = get_week_range(date_str)
+    week_shifts = Shift.query.filter(Shift.username == username, Shift.date.in_(week_days)).all()
+    week_total = 0.0
+    for s in week_shifts:
+        if exclude_shift_id and s.id == exclude_shift_id:
+            continue
+        week_total += parse_hours(s.start_time, s.end_time, s.break_time)
+        
+    if (week_total + new_hours) > 40.0:
+        return False, f"【労働基準法違反】週の実労働時間が40時間を超えます（合計: {week_total + new_hours}時間になるため登録できません）"
+        
+    return True, ""
 
 # ----------------------------------------
 # APIルート定義
@@ -58,9 +110,7 @@ def calculate_pay(start_time, end_time, break_minutes):
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json() or {}
-    username = data.get('userId')
-    password = data.get('password')
-    user = User.query.filter_by(username=username, password=password).first()
+    user = User.query.filter_by(username=data.get('userId'), password=data.get('password')).first()
     if user:
         return jsonify({
             "status": "success",
@@ -90,14 +140,27 @@ def get_shifts():
 @app.route('/api/shift-submit', methods=['POST'])
 def shift_submit():
     data = request.get_json() or {}
-    # 新規申請時はデフォルトで休憩0分
+    username = data.get('username')
+    date_str = data.get('date')
+    start_time = data.get('startTime')
+    end_time = data.get('endTime')
+    
+    try:
+        break_time = int(data.get('breakTime', 0))
+    except:
+        break_time = 0
+
+    if not username or not date_str or not start_time or not end_time:
+        return jsonify({"status": "error", "message": "入力項目が不足しています"}), 400
+
+    # 労働制限チェック
+    is_valid, err_msg = check_labor_limits(username, date_str, start_time, end_time, break_time)
+    if not is_valid:
+        return jsonify({"status": "error", "message": err_msg}), 400
+
     new_shift = Shift(
-        username=data.get('username'), 
-        date=data.get('date'), 
-        start_time=data.get('startTime'), 
-        end_time=data.get('endTime'), 
-        break_time=int(data.get('breakTime', 0)),
-        status='applied'
+        username=username, date=date_str, start_time=start_time, end_time=end_time, 
+        break_time=break_time, status='applied'
     )
     db.session.add(new_shift)
     db.session.commit()
@@ -107,18 +170,43 @@ def shift_submit():
 def admin_shift_update():
     data = request.get_json() or {}
     shift = Shift.query.get(data.get('shiftId'))
-    if not shift: return jsonify({"status": "error", "message": "Shift not found"}), 404
+    if not shift: 
+        return jsonify({"status": "error", "message": "対象のシフトが見つかりません"}), 404
+        
     action = data.get('action')
-    if action == 'confirm': 
+    
+    if action == 'confirm':
+        try:
+            break_time = int(data.get('breakTime', shift.break_time))
+        except:
+            break_time = 0
+            
+        is_valid, err_msg = check_labor_limits(shift.username, shift.date, shift.start_time, shift.end_time, break_time, exclude_shift_id=shift.id)
+        if not is_valid:
+            return jsonify({"status": "error", "message": err_msg}), 400
+            
         shift.status = 'confirmed'
-        # 確定時に休憩時間（設定されていれば）を保存できるようにする
-        if 'breakTime' in data:
-            shift.break_time = int(data.get('breakTime'))
+        shift.break_time = break_time
+        
     elif action == 'edit':
-        shift.start_time = data.get('startTime')
-        shift.end_time = data.get('endTime')
-        shift.break_time = int(data.get('breakTime', 0))
-    elif action == 'delete': db.session.delete(shift)
+        start_time = data.get('startTime')
+        end_time = data.get('endTime')
+        try:
+            break_time = int(data.get('breakTime', 0))
+        except:
+            break_time = 0
+        
+        is_valid, err_msg = check_labor_limits(shift.username, shift.date, start_time, end_time, break_time, exclude_shift_id=shift.id)
+        if not is_valid:
+            return jsonify({"status": "error", "message": err_msg}), 400
+            
+        shift.start_time = start_time
+        shift.end_time = end_time
+        shift.break_time = break_time
+        
+    elif action == 'delete': 
+        db.session.delete(shift)
+        
     db.session.commit()
     return jsonify({"status": "success"}), 200
 
@@ -134,11 +222,7 @@ def shift_cancel():
 
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
-    setting = SystemSetting.query.first()
-    if not setting:
-        setting = SystemSetting()
-        db.session.add(setting)
-        db.session.commit()
+    setting = SystemSetting.query.first() or SystemSetting()
     return jsonify({
         "status": "success",
         "settings": {"deadlineDate": setting.deadline_date, "closingDate": setting.closing_date, "paymentDate": setting.payment_date}
@@ -147,14 +231,11 @@ def get_settings():
 @app.route('/api/admin/settings-update', methods=['POST'])
 def update_settings():
     data = request.get_json() or {}
-    setting = SystemSetting.query.first()
-    if not setting:
-        setting = SystemSetting()
-        db.session.add(setting)
-    
+    setting = SystemSetting.query.first() or SystemSetting()
     setting.deadline_date = data.get('deadlineDate', setting.deadline_date)
     setting.closing_date = data.get('closingDate', setting.closing_date)
     setting.payment_date = data.get('paymentDate', setting.payment_date)
+    db.session.add(setting)
     db.session.commit()
     return jsonify({"status": "success"}), 200
 
@@ -192,11 +273,8 @@ def get_payslip():
         total_hours += hours
         total_pay += pay
         details.append({
-            "date": s.date,
-            "time": f"{s.start_time}～{s.end_time}",
-            "breakTime": s.break_time,
-            "hours": hours,
-            "pay": pay
+            "date": s.date, "time": f"{s.start_time}～{s.end_time}",
+            "breakTime": s.break_time, "hours": hours, "pay": pay
         })
 
     return jsonify({
@@ -213,8 +291,6 @@ with app.app_context():
         db.session.add(User(username='staff01', password='password123', name='山田 太郎', role='staff'))
     if not User.query.filter_by(username='admin01').first():
         db.session.add(User(username='admin01', password='adminpassword', name='管理者', role='manager'))
-    if not SystemSetting.query.first():
-        db.session.add(SystemSetting())
     db.session.commit()
 
 if __name__ == '__main__':
