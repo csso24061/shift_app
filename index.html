@@ -21,11 +21,12 @@
             padding: 30px;
             border-radius: 8px;
             border: 1px solid #ddd;
-            text-align: center;
         }
-        .login-box h2 { color: #1c64f2; margin-bottom: 20px; }
-        .login-box p { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
-        .login-input { width: 100%; padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 15px; text-align: center; }
+        .login-box h2 { color: #1c64f2; margin-bottom: 10px; text-align: center; }
+        .login-box p { color: #666; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.5; background: #f3f4f6; padding: 10px; border-radius: 4px; }
+        .login-group { display: flex; flex-direction: column; margin-bottom: 15px; text-align: left; }
+        .login-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        .login-input { width: 100%; padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         
         /* メインアプリ表示切り替え */
         .app-content { display: none; }
@@ -40,64 +41,18 @@
         .logout-btn:hover { background: #d1d5db; }
 
         /* 🔄 モード切り替えタブ */
-        .mode-tab-container {
-            display: flex;
-            background: #e5e7eb;
-            border-radius: 6px;
-            padding: 4px;
-            margin-bottom: 25px;
-        }
-        .mode-tab {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s;
-            border: none;
-            font-size: 1rem;
-        }
-        .mode-tab.active {
-            background: white;
-            color: #1c64f2;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+        .mode-tab-container { display: flex; background: #e5e7eb; border-radius: 6px; padding: 4px; margin-bottom: 25px; }
+        .mode-tab { flex: 1; text-align: center; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: all 0.2s; border: none; font-size: 1rem; }
+        .mode-tab.active { background: white; color: #1c64f2; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .mode-content { display: none; }
         .mode-content.active { display: block; }
 
         .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
-        .calendar-container {
-            background: white;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            margin-bottom: 25px;
-        }
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            color: #1e429f;
-        }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            text-align: center;
-        }
+        .calendar-container { background: white; padding: 15px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 25px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1rem; margin-bottom: 15px; color: #1e429f; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
         .day-name { font-weight: bold; font-size: 0.8rem; color: #666; padding-bottom: 5px; }
-        .calendar-day {
-            padding: 10px 0;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            background: #f3f4f6;
-            transition: all 0.2s;
-        }
+        .calendar-day { padding: 10px 0; border-radius: 4px; cursor: pointer; font-size: 0.95rem; background: #f3f4f6; transition: all 0.2s; }
         .calendar-day:hover { background: #e1effe; color: #1c64f2; }
         .calendar-day.selected { background: #1c64f2 !important; color: white !important; font-weight: bold; }
         .calendar-day.today { border: 2px solid #1c64f2; font-weight: bold; }
@@ -107,7 +62,7 @@
         .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
         .form-group label { margin-bottom: 5px; font-weight: bold; }
         select { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
-        .error-banner { background: #fde8e8; color: #e02424; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; }
+        .error-banner { background: #fde8e8; color: #e02424; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; text-align: center;}
         .submit-btn { width: 100%; padding: 12px; background: #1c64f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
         .submit-btn:hover { background: #1a56db; }
         
@@ -117,19 +72,8 @@
         .salary-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; border-top: 1px solid #ddd; padding-top: 5px; margin-top: 5px; color: #0e9f6e; }
 
         /* 店長画面用 */
-        .manager-summary {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-        .summary-card {
-            background: white;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
+        .manager-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .summary-card { background: white; padding: 15px; border-radius: 6px; border: 1px solid #ddd; text-align: center; }
         .summary-card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #666; }
         .summary-card p { margin: 0; font-size: 1.6rem; font-weight: bold; color: #1c64f2; }
         .summary-card p.total-cost { color: #e02424; }
@@ -137,15 +81,7 @@
         .history-section { margin-top: 20px; }
         .history-title { font-size: 1.2rem; color: #333; margin-bottom: 15px; font-weight: bold; }
         .history-list { display: flex; flex-direction: column; gap: 10px; }
-        .history-item { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            background: #fff; 
-            padding: 12px; 
-            border-radius: 6px; 
-            border: 1px solid #e5e7eb;
-        }
+        .history-item { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb; }
         .history-left { display: flex; align-items: center; gap: 10px; }
         .history-date { background: #e1effe; color: #1e429f; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.9rem;}
         .history-name { font-weight: bold; color: #333; }
@@ -161,9 +97,22 @@
         <div id="loginSection" class="login-content">
             <div class="login-box">
                 <h2>🔐 システムログイン</h2>
-                <p>名前を入力してログインしてください。<br>（店長画面に入る場合は <strong>admin</strong> と入力してください）</p>
+                <p>
+                    <strong>【テスト用アカウント一覧】</strong><br>
+                    ・スタッフ1：ID: <code>staff01</code> / Pass: <code>password123</code><br>
+                    ・スタッフ2：ID: <code>staff02</code> / Pass: <code>password456</code><br>
+                    ・店長用：ID: <code>admin01</code> / Pass: <code>adminpassword</code>
+                </p>
+                <div id="loginErrorArea"></div>
                 <form id="loginForm">
-                    <input type="text" id="loginUsername" class="login-input" placeholder="お名前を入力（例：山田太郎）" required autocomplete="off">
+                    <div class="login-group">
+                        <label>ユーザーID:</label>
+                        <input type="text" id="loginUserId" class="login-input" placeholder="ユーザーIDを入力" required autocomplete="off">
+                    </div>
+                    <div class="login-group">
+                        <label>パスワード:</label>
+                        <input type="password" id="loginPassword" class="login-input" placeholder="パスワードを入力" required>
+                    </div>
                     <button type="submit" class="submit-btn">ログインする</button>
                 </form>
             </div>
@@ -193,15 +142,7 @@
                     <div class="calendar-header">
                         <span id="calendarMonth">2026年 7月</span>
                     </div>
-                    <div class="calendar-grid" id="calendarGrid">
-                        <div class="day-name">日</div>
-                        <div class="day-name">月</div>
-                        <div class="day-name">火</div>
-                        <div class="day-name">水</div>
-                        <div class="day-name">木</div>
-                        <div class="day-name">金</div>
-                        <div class="day-name">土</div>
-                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
                 </div>
 
                 <div class="form-section">
@@ -260,22 +201,21 @@
     </div>
 
     <script>
-        // セクションの切り替え用
         const loginSection = document.getElementById('loginSection');
         const appSection = document.getElementById('appSection');
         const loginForm = document.getElementById('loginForm');
-        const loginUsername = document.getElementById('loginUsername');
+        const loginUserIdInput = document.getElementById('loginUserId');
+        const loginPasswordInput = document.getElementById('loginPassword');
+        const loginErrorArea = document.getElementById('loginErrorArea');
         const currentUserDisplay = document.getElementById('currentUserDisplay');
         const logoutBtn = document.getElementById('logoutBtn');
 
-        // タブ切り替え用の要素取得
         const tabContainer = document.getElementById('tabContainer');
         const tabStaff = document.getElementById('tabStaff');
         const tabManager = document.getElementById('tabManager');
         const contentStaff = document.getElementById('contentStaff');
         const contentManager = document.getElementById('contentManager');
 
-        // シフト関連の要素取得
         const startTimeSelect = document.getElementById('startTime');
         const endTimeSelect = document.getElementById('endTime');
         const selectedDateText = document.getElementById('selectedDateText');
@@ -287,48 +227,67 @@
         const totalHoursDisplay = document.getElementById('totalHoursDisplay');
         const totalCostDisplay = document.getElementById('totalCostDisplay');
 
-        // ログイン中のユーザー名
         let currentLoggedInUser = "";
+        let currentLoggedInRole = "";
         let selectedDate = "";
 
-        // 🔑 ログイン処理
-        loginForm.addEventListener('submit', (e) => {
+        // 🔑 ログイン処理 (API通信)
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = loginUsername.value.trim();
-            if (!username) return;
+            loginErrorArea.innerHTML = '';
 
-            currentLoggedInUser = username;
-            currentUserDisplay.innerText = username;
+            const payload = {
+                userId: loginUserIdInput.value.trim(),
+                password: loginPasswordInput.value
+            };
 
-            // ログイン画面を隠し、メイン画面を表示
-            loginSection.classList.add('hidden');
-            appSection.classList.add('active');
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
 
-            // 👑 権限設定（"admin" または "店長" でログインした場合のみ店長タブを使えるようにする）
-            if (username.toLowerCase() === 'admin' || username === '店長') {
-                tabContainer.style.display = 'flex';  // タブを表示
-                switchToStaffMode(); // 初期表示はスタッフ画面
-            } else {
-                tabContainer.style.display = 'none';  // 一般ユーザーにはタブを非表示にして店長画面にいけないようにする
-                switchToStaffMode();
+                if (!response.ok) {
+                    loginErrorArea.innerHTML = `<div class="error-banner">${result.message}</div>`;
+                } else {
+                    currentLoggedInUser = result.user.name;
+                    currentLoggedInRole = result.user.role;
+                    currentUserDisplay.innerText = currentLoggedInUser;
+
+                    loginSection.classList.add('hidden');
+                    appSection.classList.add('active');
+
+                    // 👑 権限による画面制御
+                    if (currentLoggedInRole === 'manager') {
+                        tabContainer.style.display = 'flex';
+                        switchToManagerMode(); 
+                    } else {
+                        tabContainer.style.display = 'none';
+                        switchToStaffMode();
+                    }
+
+                    generateCalendar();
+                    fetchAndRenderShifts();
+                }
+            } catch (err) {
+                loginErrorArea.innerHTML = `<div class="error-banner">⚠️ Flaskサーバーに接続できません。</div>`;
             }
-
-            // カレンダーと履歴を再読み込み
-            generateCalendar();
-            fetchAndRenderShifts();
         });
 
         // 🔓 ログアウト処理
         logoutBtn.addEventListener('click', () => {
             currentLoggedInUser = "";
-            loginUsername.value = "";
+            currentLoggedInRole = "";
+            loginUserIdInput.value = "";
+            loginPasswordInput.value = "";
             appSection.classList.remove('active');
             loginSection.classList.remove('hidden');
             document.getElementById('successArea').innerHTML = '';
             document.getElementById('errorArea').innerHTML = '';
         });
 
-        // 🔄 モード切り替え関数
         function switchToStaffMode() {
             tabStaff.classList.add('active');
             tabManager.classList.remove('active');
@@ -363,18 +322,12 @@
         // カレンダー生成
         function generateCalendar() {
             calendarGrid.innerHTML = `
-                <div class="day-name">日</div>
-                <div class="day-name">月</div>
-                <div class="day-name">火</div>
-                <div class="day-name">水</div>
-                <div class="day-name">木</div>
-                <div class="day-name">金</div>
-                <div class="day-name">土</div>
+                <div class="day-name">日</div><div class="day-name">月</div><div class="day-name">火</div>
+                <div class="day-name">水</div><div class="day-name">木</div><div class="day-name">金</div><div class="day-name">土</div>
             `;
             const now = new Date();
             const year = now.getFullYear();
             const month = now.getMonth();
-            
             document.getElementById('calendarMonth').innerText = `${year}年 ${month + 1}月`;
 
             const firstDayIndex = new Date(year, month, 1).getDay();
@@ -389,28 +342,23 @@
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'calendar-day';
                 dayDiv.innerText = day;
-
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 dayDiv.dataset.date = dateStr;
 
-                if (day === todayDate && month === now.getMonth()) {
-                    dayDiv.classList.add('today');
-                }
+                if (day === todayDate && month === now.getMonth()) dayDiv.classList.add('today');
 
                 dayDiv.addEventListener('click', function() {
                     document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
                     this.classList.add('selected');
-                    
                     selectedDate = this.dataset.date;
                     selectedDateText.innerText = `📅 選択中: ${month + 1}月${day}日`;
                     submitBtn.disabled = false;
                 });
-
                 calendarGrid.appendChild(dayDiv);
             }
         }
 
-        // 🔄 サーバーから最新のシフトデータを取得して画面に表示する関数
+        // 🔄 シフト履歴の取得と描画
         async function fetchAndRenderShifts() {
             try {
                 const response = await fetch('http://127.0.0.1:5000/api/shifts');
@@ -419,7 +367,7 @@
                 if (result.status === "success") {
                     const shifts = result.shifts;
                     
-                    // 1. 【スタッフ用】ログイン中の本人だけのシフト履歴をフィルタリングして表示
+                    // 1. スタッフ個人履歴の描画
                     staffHistoryList.innerHTML = '';
                     const myShifts = shifts.filter(s => s.username === currentLoggedInUser);
                     
@@ -428,8 +376,7 @@
                     } else {
                         myShifts.forEach(shift => {
                             const dateParts = shift.date.split('-');
-                            const formattedDate = dateParts.length === 3 ? `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日` : shift.date;
-                            
+                            const formattedDate = `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日`;
                             const item = document.createElement('div');
                             item.className = 'history-item';
                             item.innerHTML = `
@@ -441,8 +388,8 @@
                         });
                     }
 
-                    // 2. 【店長用】全スタッフのデータを集計して表示
-                    if (currentLoggedInUser.toLowerCase() === 'admin' || currentLoggedInUser === '店長') {
+                    // 2. 店長用全履歴の描画
+                    if (currentLoggedInRole === 'manager') {
                         managerHistoryList.innerHTML = '';
                         let totalHours = 0;
                         let totalCost = 0;
@@ -455,8 +402,7 @@
                                 totalCost += shift.calculation.totalPay;
 
                                 const dateParts = shift.date.split('-');
-                                const formattedDate = dateParts.length === 3 ? `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日` : shift.date;
-
+                                const formattedDate = `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日`;
                                 const item = document.createElement('div');
                                 item.className = 'history-item';
                                 item.innerHTML = `
@@ -490,7 +436,7 @@
             successArea.innerHTML = '';
 
             const payload = {
-                username: currentLoggedInUser,  // ログイン中の名前をセットして送信
+                username: currentLoggedInUser,
                 date: selectedDate,
                 startTime: startTimeSelect.value,
                 endTime: endTimeSelect.value
@@ -502,7 +448,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 const result = await response.json();
 
                 if (!response.ok) {
@@ -521,12 +466,10 @@
                             </div>
                         </div>
                     `;
-
-                    // 送信後、リストを再描画
                     fetchAndRenderShifts();
                 }
             } catch (err) {
-                errorArea.innerHTML = `<div class="error-banner">⚠️ Flaskサーバーに接続できません。app.pyが起動しているか確認してください。</div>`;
+                errorArea.innerHTML = `<div class="error-banner">⚠️ サーバーエラーが発生しました。</div>`;
             }
         });
     </script>
