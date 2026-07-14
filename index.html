@@ -18,6 +18,25 @@
         .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
         .form-group label { margin-bottom: 5px; font-weight: bold; }
         select, input { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+        
+        /* 📅 カレンダー選択エリアを直感的で押しやすくするデザイン */
+        .calendar-input {
+            padding: 12px;
+            font-size: 1.1rem;
+            border: 2px solid #1c64f2;
+            border-radius: 6px;
+            background-color: #f0f5ff;
+            color: #1e429f;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .calendar-input:hover {
+            background-color: #e1effe;
+            border-color: #1a56db;
+        }
+
         .error-banner { background: #fde8e8; color: #e02424; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; }
         .submit-btn { width: 100%; padding: 12px; background: #1c64f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
         .submit-btn:hover { background: #1a56db; }
@@ -27,9 +46,9 @@
         .salary-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.95rem; }
         .salary-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; border-top: 1px solid #ddd; padding-top: 5px; margin-top: 5px; color: #0e9f6e; }
 
-        /* 📅 提出履歴一覧（カレンダー風リスト）のスタイル */
+        /* 提出履歴一覧のスタイル */
         .history-section { margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px; }
-        .history-title { font-size: 1.2rem; color: #333; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .history-title { font-size: 1.2rem; color: #333; margin-bottom: 10px; }
         .history-list { display: flex; flex-direction: column; gap: 10px; }
         .history-item { 
             display: flex; 
@@ -57,21 +76,22 @@
 
     <div class="container">
         <h1>📅 希望シフト提出</h1>
-        <p class="subtitle">【機能②】提出したシフトの履歴一覧表示</p>
+        <p class="subtitle">【提案反映】カレンダーから選んでシフトを入力</p>
 
         <form id="shiftForm">
             <div class="form-group">
-                <label>勤務希望日:</label>
-                <input type="date" id="shiftDate">
+                <label>📅 勤務希望日をクリックして選択:</label>
+                <!-- クラスを calendar-input に変更して押しやすくしました -->
+                <input type="date" id="shiftDate" class="calendar-input">
             </div>
 
             <div class="form-group">
-                <label>開始時間:</label>
+                <label>⏰ 開始時間:</label>
                 <select id="startTime"></select>
             </div>
 
             <div class="form-group">
-                <label>終了時間:</label>
+                <label>⏰ 終了時間:</label>
                 <select id="endTime"></select>
             </div>
 
@@ -80,17 +100,13 @@
             <button type="submit" class="submit-btn">希望シフトを送信</button>
         </form>
 
-        <!-- 今回の即時受付メッセージを表示する場所 -->
         <div id="successArea"></div>
 
-        <!-- 📅 ここに提出済みの履歴が溜まっていきます -->
         <div class="history-section">
             <div class="history-title">
                 <span>📋 提出済みの希望一覧</span>
             </div>
-            <div id="historyList" class="history-list">
-                <!-- JavaScriptでここに履歴カードを追加します -->
-            </div>
+            <div id="historyList" class="history-list"></div>
         </div>
     </div>
 
@@ -98,6 +114,14 @@
         const startTimeSelect = document.getElementById('startTime');
         const endTimeSelect = document.getElementById('endTime');
         const historyList = document.getElementById('historyList');
+        const shiftDateInput = document.getElementById('shiftDate');
+
+        // 📅 今日の日付をカレンダーの初期値として自動セット
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        shiftDateInput.value = `${yyyy}-${mm}-${dd}`;
         
         // 30分刻みの選択肢を生成
         for (let hour = 0; hour < 24; hour++) {
@@ -119,7 +143,7 @@
             successArea.innerHTML = '';
 
             const payload = {
-                date: document.getElementById('shiftDate').value,
+                date: shiftDateInput.value,
                 startTime: startTimeSelect.value,
                 endTime: endTimeSelect.value
             };
@@ -138,7 +162,6 @@
                 } else {
                     const calc = result.data.calculation;
                     
-                    // 1. 今回送信した分の結果を表示
                     successArea.innerHTML = `
                         <div class="success-box">
                             <h3>${result.message}</h3>
@@ -152,11 +175,9 @@
                         </div>
                     `;
 
-                    // 2. 📅 画面下部の一覧リストに新しい履歴カードを追加
                     const historyItem = document.createElement('div');
                     historyItem.className = 'history-item';
                     
-                    // 日付の見た目を「2026-07-14」から「7月14日」に少し見やすく変換
                     const dateParts = result.data.date.split('-');
                     const formattedDate = dateParts.length === 3 ? `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日` : result.data.date;
 
@@ -166,7 +187,6 @@
                         <span class="history-pay">¥${calc.totalPay.toLocaleString()}</span>
                     `;
                     
-                    // 新しいものほど上に表示されるように、リストの先頭に追加
                     historyList.insertBefore(historyItem, historyList.firstChild);
                 }
             } catch (err) {
