@@ -4,11 +4,18 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# 🔑 サンプル用のユーザーマスターデータ（「店長」を「管理者」に変更）
+# 🔑 サンプル用のユーザーマスターデータ
 USER_MASTER = {
     "staff01": {"password": "password123", "name": "山田 太郎", "role": "staff"},
     "staff02": {"password": "password456", "name": "佐藤 花子", "role": "staff"},
     "admin01": {"password": "adminpassword", "name": "管理者", "role": "manager"}
+}
+
+# 💾 運用スケジュール設定の初期値
+system_settings = {
+    "deadlineDate": "2026-07-25",  # シフト提出期限
+    "closingDate": "末日",         # 給与締め日
+    "paymentDate": "翌月15日"       # 給与振込日
 }
 
 # 💾 シフトデータを保存するリスト
@@ -24,7 +31,6 @@ def login():
     if not user_id or not password:
         return jsonify({"status": "error", "message": "⚠️ IDとパスワードを入力してください。"}), 400
 
-    # ユーザーの存在とパスワードのチェック
     user = USER_MASTER.get(user_id)
     if user and user["password"] == password:
         return jsonify({
@@ -38,6 +44,28 @@ def login():
     else:
         return jsonify({"status": "error", "message": "⚠️ IDまたはパスワードが間違っています。"}), 401
 
+# ⚙️ 設定取得API
+@app.route('/api/settings', methods=['GET'])
+def get_settings():
+    return jsonify({"status": "success", "settings": system_settings})
+
+# ⚙️ 設定更新API（管理者用）
+@app.route('/api/settings', methods=['POST'])
+def update_settings():
+    data = request.json
+    deadline = data.get('deadlineDate')
+    closing = data.get('closingDate')
+    payment = data.get('paymentDate')
+
+    if not deadline or not closing or not payment:
+        return jsonify({"status": "error", "message": "⚠️ すべての項目を入力してください。"}), 400
+
+    system_settings["deadlineDate"] = deadline
+    system_settings["closingDate"] = closing
+    system_settings["paymentDate"] = payment
+
+    return jsonify({"status": "success", "message": "設定を更新しました。", "settings": system_settings})
+
 @app.route('/api/shift-submit', methods=['POST'])
 def submit_shift():
     data = request.json
@@ -50,6 +78,11 @@ def submit_shift():
         return jsonify({"status": "error", "message": "⚠️ ログイン情報がありません。"}), 401
     if not shift_date or not start_time or not end_time:
         return jsonify({"status": "error", "message": "⚠️ 入力項目が不足しています。"}), 400
+
+    # 🚨 シフト提出期限を過ぎているかチェック
+    if shift_date > system_settings["deadlineDate"]:
+        # ※運用ルールに応じて期限切れ制限をかけたい場合はここを有効にできます
+        pass
 
     # 時間を「分」に変換
     start_h, start_m = map(int, start_time.split(':'))

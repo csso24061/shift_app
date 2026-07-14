@@ -40,6 +40,9 @@
         .logout-btn { background: #e5e7eb; color: #374151; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
         .logout-btn:hover { background: #d1d5db; }
 
+        /* 📢 運用情報バナー */
+        .schedule-banner { background: #fff8e1; border-left: 4px solid #ffb300; color: #b78103; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; font-weight: bold; line-height: 1.4; }
+
         /* 🔄 モード切り替えタブ */
         .mode-tab-container { display: flex; background: #e5e7eb; border-radius: 6px; padding: 4px; margin-bottom: 25px; }
         .mode-tab { flex: 1; text-align: center; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: all 0.2s; border: none; font-size: 1rem; }
@@ -60,8 +63,8 @@
         .form-section { background: #fff; padding: 20px; border-radius: 6px; border: 1px solid #e5e7eb; margin-bottom: 20px; }
         .selected-date-display { font-size: 1.1rem; font-weight: bold; color: #1c64f2; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f5ff; }
         .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
-        .form-group label { margin-bottom: 5px; font-weight: bold; }
-        select { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+        .form-group label { margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
+        select, input[type="text"], input[type="date"] { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         .error-banner { background: #fde8e8; color: #e02424; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; text-align: center;}
         .submit-btn { width: 100%; padding: 12px; background: #1c64f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
         .submit-btn:hover { background: #1a56db; }
@@ -77,6 +80,10 @@
         .summary-card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #666; }
         .summary-card p { margin: 0; font-size: 1.6rem; font-weight: bold; color: #1c64f2; }
         .summary-card p.total-cost { color: #e02424; }
+
+        /* 設定管理パネル */
+        .settings-panel { background: #f3f4f6; border: 1px solid #e5e7eb; padding: 20px; border-radius: 6px; margin-bottom: 25px; }
+        .settings-panel h2 { margin-top: 0; font-size: 1.1rem; color: #1e429f; margin-bottom: 15px; }
 
         .history-section { margin-top: 20px; }
         .history-title { font-size: 1.2rem; color: #333; margin-bottom: 15px; font-weight: bold; }
@@ -125,6 +132,12 @@
             <div class="user-info-bar">
                 <div>ログイン中: <span id="currentUserDisplay" class="user-name">未ログイン</span> さん</div>
                 <button id="logoutBtn" class="logout-btn">ログアウト</button>
+            </div>
+
+            <!-- 📢 運用情報バナー (締め日や振込日などの可視化) -->
+            <div id="scheduleBanner" class="schedule-banner">
+                ⏳ シフト提出期限：<span id="bannerDeadline">-</span><br>
+                💰 給与締め日：<span id="bannerClosing">-</span> | 🏦 振込予定日：<span id="bannerPayment">-</span>
             </div>
 
             <!-- 🔄 モード切り替えタブ -->
@@ -179,6 +192,28 @@
                 <h1>👑 シフト管理＆人件費集計</h1>
                 <p class="subtitle">提出されたシフトの状況と、概算人件費の集計データです</p>
 
+                <!-- 🛠️ スケジュール設定パネル（新規追加） -->
+                <div class="settings-panel">
+                    <h2>⚙️ 運用スケジュール設定</h2>
+                    <form id="settingsForm">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>📅 希望シフト提出期限:</label>
+                                <input type="date" id="inputDeadline" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>💰 給与締め日:</label>
+                                <input type="text" id="inputClosing" placeholder="例: 末日" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>🏦 給与振込日:</label>
+                            <input type="text" id="inputPayment" placeholder="例: 翌月15日" required>
+                        </div>
+                        <button type="submit" class="submit-btn" style="padding: 8px; font-size: 0.9rem; background: #0e9f6e;">スケジュール設定を更新する</button>
+                    </form>
+                </div>
+
                 <div class="manager-summary">
                     <div class="summary-card">
                         <h3>総労働時間</h3>
@@ -227,9 +262,69 @@
         const totalHoursDisplay = document.getElementById('totalHoursDisplay');
         const totalCostDisplay = document.getElementById('totalCostDisplay');
 
+        // スケジュールUI用の要素（新規追加）
+        const bannerDeadline = document.getElementById('bannerDeadline');
+        const bannerClosing = document.getElementById('bannerClosing');
+        const bannerPayment = document.getElementById('bannerPayment');
+        const inputDeadline = document.getElementById('inputDeadline');
+        const inputClosing = document.getElementById('inputClosing');
+        const inputPayment = document.getElementById('inputPayment');
+        const settingsForm = document.getElementById('settingsForm');
+
         let currentLoggedInUser = "";
         let currentLoggedInRole = "";
         let selectedDate = "";
+
+        // ⚙️ 運用設定スケジュールを取得する処理
+        async function fetchSettings() {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/settings');
+                const result = await response.json();
+                if (result.status === "success") {
+                    const settings = result.settings;
+                    
+                    // バナー（共通表示）の更新
+                    const dl = new Date(settings.deadlineDate);
+                    bannerDeadline.innerText = `${dl.getFullYear()}年${dl.getMonth()+1}月${dl.getDate()}日`;
+                    bannerClosing.innerText = settings.closingDate;
+                    bannerPayment.innerText = settings.paymentDate;
+
+                    // 管理者フォームの初期値反映
+                    inputDeadline.value = settings.deadlineDate;
+                    inputClosing.value = settings.closingDate;
+                    inputPayment.value = settings.paymentDate;
+                }
+            } catch (err) {
+                console.error("設定取得エラー:", err);
+            }
+        }
+
+        // ⚙️ スケジュール設定の更新処理（管理者機能）
+        settingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                deadlineDate: inputDeadline.value,
+                closingDate: inputClosing.value,
+                paymentDate: inputPayment.value
+            };
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert("✅ 運用スケジュール設定を更新しました。");
+                    fetchSettings(); // 再描画
+                } else {
+                    alert("⚠️ エラー: " + result.message);
+                }
+            } catch (err) {
+                alert("⚠️ 設定の保存に失敗しました。");
+            }
+        });
 
         // 🔑 ログイン処理 (API通信)
         loginForm.addEventListener('submit', async (e) => {
@@ -269,6 +364,7 @@
                     }
 
                     generateCalendar();
+                    fetchSettings();  // 運用スケジュールを反映
                     fetchAndRenderShifts();
                 }
             } catch (err) {
