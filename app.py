@@ -175,3 +175,7 @@ with app.app_context():
         db.session.add(admin)
         
     db.session.commit()
+
+if __name__ == '__main__':
+    # ポート番号を 5001 に固定して起動
+    app.run(debug=True, port=5001)
