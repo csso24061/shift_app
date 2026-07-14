@@ -164,12 +164,17 @@ def get_notifications():
 # ----------------------------------------
 with app.app_context():
     db.create_all()
+    
+    # 【ここを修正】それぞれのユーザーが「存在しない場合だけ個別に登録」するようにしました
     if not User.query.filter_by(username='staff01').first():
         staff = User(username='staff01', password='password123', name='山田 太郎', role='staff')
-        admin = User(username='admin01', password='password123', name='管理 花子', role='manager')
         db.session.add(staff)
+        
+    if not User.query.filter_by(username='admin01').first():
+        admin = User(username='admin01', password='password123', name='管理 花子', role='manager')
         db.session.add(admin)
-        db.session.commit()
+        
+    db.session.commit()
 
 if __name__ == '__main__':
     # ポート番号を 5001 に固定して起動
