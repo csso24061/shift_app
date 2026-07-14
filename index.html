@@ -31,7 +31,11 @@
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 15px; }
         .day-name { text-align: center; font-weight: bold; padding: 5px; font-size: 0.85rem; color: #6b7280; }
-        .calendar-day { background: #f9fafb; border: 1px solid #e5e7eb; min-height: 75px; padding: 6px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s; font-weight: 500; }
+        /* 
+           ★ カレンダーのマスの高さを少し広げました (min-height: 75px -> 95px) 
+           これで時間が追加されてもデザインが崩れません。
+        */
+        .calendar-day { background: #f9fafb; border: 1px solid #e5e7eb; min-height: 95px; padding: 6px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s; font-weight: 500; }
         .calendar-day:hover { background: #f0fdf4; border-color: var(--success); }
         .calendar-day.selected { background: #e0e7ff; border-color: var(--primary); box-shadow: 0 0 0 2px #c7d2fe; }
         .calendar-day.has-applied { border-left: 4px solid var(--warning); }
@@ -267,12 +271,27 @@
             dayDiv.dataset.date = dateStr;
 
             const dayShifts = allShifts.filter(s => userRole === 'manager' ? s.date === dateStr : (s.date === dateStr && s.username === currentLoggedInUser));
+            
+            /* ★ 変更ポイント: ここでカレンダー内に時間データを表示します */
             if (dayShifts.length > 0) {
                 const confirmed = dayShifts.find(s => s.status === 'confirmed');
                 if (confirmed) {
-                    dayDiv.classList.add('has-confirmed'); dayDiv.innerHTML += `<span class="status-dot" style="color:#057a55;">✅ 確: ${dayShifts.length}件</span>`;
+                    dayDiv.classList.add('has-confirmed');
+                    dayDiv.innerHTML += `
+                        <div style="font-size: 0.7rem; color: #047857; font-weight: bold; margin-top: 4px; background: #d1fae5; padding: 2px; border-radius: 4px; text-align: center;">
+                            🕒 ${confirmed.startTime}～${confirmed.endTime}
+                        </div>
+                        <span class="status-dot" style="color:#057a55; margin-top: 2px;">✅ 確定</span>
+                    `;
                 } else {
-                    dayDiv.classList.add('has-applied'); dayDiv.innerHTML += `<span class="status-dot">⏳ 未承認</span>`;
+                    const applied = dayShifts[0]; // 申請中のシフト
+                    dayDiv.classList.add('has-applied');
+                    dayDiv.innerHTML += `
+                        <div style="font-size: 0.7rem; color: #b45309; font-weight: bold; margin-top: 4px; background: #fef3c7; padding: 2px; border-radius: 4px; text-align: center; opacity: 0.9;">
+                            ⏳ ${applied.startTime}～${applied.endTime}
+                        </div>
+                        <span class="status-dot" style="margin-top: 2px;">⏳ 申請中</span>
+                    `;
                 }
             }
 
