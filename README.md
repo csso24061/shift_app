@@ -37,22 +37,15 @@
 
 ---
 
-## 📐 2. 設計図4種（画像・コード両対応）
-
-> 💡 **図の表示について：** 
-> GitHub上では以下のMermaidコードブロックが自動で図として描画されます。
-> もしPNG等の**画像ファイル**として貼りたい場合は、Mermaidコードを削除し、各設計説明の下にある `<!-- ![図の名称](画像のパス) -->` のコメントアウトを解除（ `<!--` と `-->` を削除）して画像ファイルへのリンクに差し替えてください。
+## 📐 2. 設計図4種
 
 <details>
-<summary><b>🗺️ ① ユースケース図（役割と機能の相関）</b></summary>
+<summary><b> ① ユースケース図（役割と機能の相関）</b></summary>
 
 ### 設計説明
 アプリを使う「3つの立場（アクター）」と、それぞれが実行できる操作（ユースケース）の関係図です。
 店舗管理者が、自身のシフトを提出する「労働者としての機能」と、全体のシフトを調整する「管理者としての機能」を1つのIDで行ったり来たりできる関係性を整理しています。
 また、シフトを確定すると自動的に給与が計算される関係（include）や、未提出のスタッフがログインしたときだけポップアップが出る関係（extend）を定義しています。
-
-<!-- 📷 画像として貼る場合は、以下の行のコメントアウトを外してパスを書き換えてください -->
-<!-- ![ユースケース図](docs/images/usecase_diagram.png) -->
 
 ```mermaid
 flowchart TD
@@ -92,3 +85,79 @@ flowchart TD
     UC_AdjustShift ===>|"<<include>>"| UC_CalcSalary
     UC_ShowAlert -.->|"<<extend>>\n(未提出時に発火)"| UC_Login
     UC_ApproveChange -.->|"<<extend>>\n(承認時)"| UC_AdjustShift
+
+    <details>
+<summary><b> ② クラス図 </b></summary>
+
+### 設計説明
+プログラムの実装や、データベース（テーブル）の構造に直結する設計図です。
+「1スタッフは必ず1つの店舗に所属する（StoreとEmployeeの1対多の関係）」というシンプルな形で開発コストを抑えています。また、店長や一般スタッフはすべて「Employee（労働者）」として同じクラスを継承しており、システムがログインIDの権限フラグを見て「管理者メニュー」を表示する仕組みをとることで、1つのIDで複数の操作をスムーズに行えるデータ構造にしています。
+
+```mermaid
+classDiagram
+    class User {
+        +int id
+        +string loginId
+        +string passwordHash
+        +string name
+        +string roleType
+        +login() bool
+        +logout() bool
+    }
+    class SystemAdmin {
+        +createStore(string name) Store
+        +issueManagerAccount(Store store) User
+    }
+    class Employee {
+        +int id
+        +int baseHourlyRate
+        +submitWishShift() WishShift
+        +requestShiftChange() ChangeRequest
+        +viewMySalary() SalaryReport
+    }
+    class Store {
+        +int id
+        +string name
+        +int salaryClosingDay
+        +int shiftSubmissionDeadlineDay
+        +int shiftChangeDeadlineDaysBefore
+    }
+    class WishShift {
+        +int id
+        +Date date
+        +Time startTime
+        +Time endTime
+    }
+    class ConfirmedShift {
+        +int id
+        +Date date
+        +Time startTime
+        +Time endTime
+    }
+    class ChangeRequest {
+        +int id
+        +string requestType
+        +Time proposedStartTime
+        +Time proposedEndTime
+        +string status
+    }
+    class SalaryReport {
+        +int id
+        +Month targetMonth
+        +int totalWorkingMinutes
+        +int regularSalary
+        +int overtimeSalary
+        +int midnightSalary
+        +calculateSalary() void
+    }
+
+    SystemAdmin --|> User : 継承
+    Employee --|> User : 継承
+    SystemAdmin "1" --> "0..*" Store : 管理・発行
+    Store "1" o--> "0..*" Employee : 所属
+    Store "1" *--> "0..*" ConfirmedShift : 保持
+    Employee "1" *--> "0..*" WishShift : 提出
+    Employee "1" *--> "0..*" ChangeRequest : 申請
+    Employee "1" *--> "0..*" SalaryReport : 所有
+    ChangeRequest "0..*" --> "1" ConfirmedShift : 対象
+    ConfirmedShift "0..*" --> "1" Employee : 担当
