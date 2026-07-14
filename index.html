@@ -6,8 +6,8 @@
     <title>📅 希望シフト提出</title>
     <style>
         .container {
-            max-width: 500px;
-            margin: 40px auto;
+            max-width: 600px;
+            margin: 30px auto;
             padding: 20px;
             font-family: sans-serif;
             background: #f9f9f9;
@@ -15,38 +15,89 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
-        .form-group label { margin-bottom: 5px; font-weight: bold; }
-        select, input { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
         
-        /* 📅 カレンダー選択エリアを直感的で押しやすくするデザイン */
-        .calendar-input {
-            padding: 12px;
-            font-size: 1.1rem;
-            border: 2px solid #1c64f2;
+        /* 📅 カレンダー全体のスタイル */
+        .calendar-container {
+            background: white;
+            padding: 15px;
             border-radius: 6px;
-            background-color: #f0f5ff;
-            color: #1e429f;
-            font-weight: bold;
-            cursor: pointer;
-            outline: none;
-            transition: all 0.2s ease;
+            border: 1px solid #ddd;
+            margin-bottom: 25px;
         }
-        .calendar-input:hover {
-            background-color: #e1effe;
-            border-color: #1a56db;
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #1e429f;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            text-align: center;
+        }
+        .day-name {
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: #666;
+            padding-bottom: 5px;
+        }
+        .calendar-day {
+            padding: 10px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            background: #f3f4f6;
+            transition: all 0.2s;
+        }
+        .calendar-day:hover {
+            background: #e1effe;
+            color: #1c64f2;
+        }
+        /* 日付が選択された時の見た目 */
+        .calendar-day.selected {
+            background: #1c64f2 !important;
+            color: white !important;
+            font-weight: bold;
+        }
+        /* 今日の日付の見た目 */
+        .calendar-day.today {
+            border: 2px solid #1c64f2;
+            font-weight: bold;
         }
 
+        /* フォームエリアのスタイル */
+        .form-section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+        .selected-date-display {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #1c64f2;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f5ff;
+        }
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 5px; font-weight: bold; }
+        select { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
         .error-banner { background: #fde8e8; color: #e02424; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; }
         .submit-btn { width: 100%; padding: 12px; background: #1c64f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
         .submit-btn:hover { background: #1a56db; }
         
+        /* 給与表示・履歴一覧のスタイル */
         .success-box { margin-top: 20px; padding: 15px; background: #def7ec; color: #03543f; border-radius: 4px; }
-        .salary-spec { background: white; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #0e9f6e; color: #333;}
+        .salary-spec { background: #f9f9f9; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #0e9f6e; color: #333;}
         .salary-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.95rem; }
         .salary-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; border-top: 1px solid #ddd; padding-top: 5px; margin-top: 5px; color: #0e9f6e; }
 
-        /* 提出履歴一覧のスタイル */
         .history-section { margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px; }
         .history-title { font-size: 1.2rem; color: #333; margin-bottom: 10px; }
         .history-list { display: flex; flex-direction: column; gap: 10px; }
@@ -58,16 +109,8 @@
             padding: 12px; 
             border-radius: 6px; 
             border: 1px solid #e5e7eb;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .history-date { 
-            background: #e1effe; 
-            color: #1e429f; 
-            padding: 4px 8px; 
-            border-radius: 4px; 
-            font-weight: bold; 
-            font-size: 0.9rem;
-        }
+        .history-date { background: #e1effe; color: #1e429f; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.9rem;}
         .history-time { font-weight: 500; color: #4b5563; }
         .history-pay { color: #0e9f6e; font-weight: bold; }
     </style>
@@ -76,36 +119,51 @@
 
     <div class="container">
         <h1>📅 希望シフト提出</h1>
-        <p class="subtitle">【提案反映】カレンダーから選んでシフトを入力</p>
+        <p class="subtitle">【アップデート】カレンダーの日付をクリックして入力</p>
 
-        <form id="shiftForm">
-            <div class="form-group">
-                <label>📅 勤務希望日をクリックして選択:</label>
-                <!-- クラスを calendar-input に変更して押しやすくしました -->
-                <input type="date" id="shiftDate" class="calendar-input">
+        <!-- 📅 1ヶ月カレンダー表示エリア -->
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <span id="calendarMonth">2026年 7月</span>
             </div>
-
-            <div class="form-group">
-                <label>⏰ 開始時間:</label>
-                <select id="startTime"></select>
+            <div class="calendar-grid" id="calendarGrid">
+                <!-- 曜日ラベル -->
+                <div class="day-name">日</div>
+                <div class="day-name">月</div>
+                <div class="day-name">火</div>
+                <div class="day-name">水</div>
+                <div class="day-name">木</div>
+                <div class="day-name">金</div>
+                <div class="day-name">土</div>
+                <!-- 日付はJavaScriptで自動生成します -->
             </div>
+        </div>
 
-            <div class="form-group">
-                <label>⏰ 終了時間:</label>
-                <select id="endTime"></select>
-            </div>
+        <!-- ⏰ シフト入力フォームエリア -->
+        <div class="form-section">
+            <div class="selected-date-display" id="selectedDateText">👉 カレンダーの日付を選択してください</div>
+            
+            <form id="shiftForm">
+                <div class="form-group">
+                    <label>⏰ 開始時間:</label>
+                    <select id="startTime"></select>
+                </div>
 
-            <div id="errorArea"></div>
+                <div class="form-group">
+                    <label>⏰ 終了時間:</label>
+                    <select id="endTime"></select>
+                </div>
 
-            <button type="submit" class="submit-btn">希望シフトを送信</button>
-        </form>
+                <div id="errorArea"></div>
+
+                <button type="submit" class="submit-btn" id="submitBtn" disabled>選択した日でシフトを送信</button>
+            </form>
+        </div>
 
         <div id="successArea"></div>
 
         <div class="history-section">
-            <div class="history-title">
-                <span>📋 提出済みの希望一覧</span>
-            </div>
+            <div class="history-title">📋 提出済みの希望一覧</div>
             <div id="historyList" class="history-list"></div>
         </div>
     </div>
@@ -114,15 +172,13 @@
         const startTimeSelect = document.getElementById('startTime');
         const endTimeSelect = document.getElementById('endTime');
         const historyList = document.getElementById('historyList');
-        const shiftDateInput = document.getElementById('shiftDate');
+        const selectedDateText = document.getElementById('selectedDateText');
+        const submitBtn = document.getElementById('submitBtn');
+        const calendarGrid = document.getElementById('calendarGrid');
 
-        // 📅 今日の日付をカレンダーの初期値として自動セット
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        shiftDateInput.value = `${yyyy}-${mm}-${dd}`;
-        
+        // 現在選択中の日付データ (YYYY-MM-DD形式)
+        let selectedDate = "";
+
         // 30分刻みの選択肢を生成
         for (let hour = 0; hour < 24; hour++) {
             for (let min of ["00", "30"]) {
@@ -135,15 +191,72 @@
         startTimeSelect.value = "09:00";
         endTimeSelect.value = "18:00";
 
+        // 📅 JavaScriptで今月のカレンダーを動的生成
+        function generateCalendar() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth(); // 0が1月、6が7月
+            
+            document.getElementById('calendarMonth').innerText = `${year}年 ${month + 1}月`;
+
+            // 月の初日の曜日と、月の末日（日数）を取得
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const todayDate = now.getDate();
+
+            // カレンダーの始まりの空白（先月の末尾分）
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyDiv = document.createElement('div');
+                calendarGrid.appendChild(emptyDiv);
+            }
+
+            // 日付セルを1つずつ生成
+            for (let day = 1; day <= lastDay; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day';
+                dayDiv.innerText = day;
+
+                // フォーマットされた日付文字列 (例: "2026-07-14")
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                dayDiv.dataset.date = dateStr;
+
+                // 今日なら枠線をつける
+                if (day === todayDate && month === now.getMonth()) {
+                    dayDiv.classList.add('today');
+                }
+
+                // 日付をクリックした時の処理
+                dayDiv.addEventListener('click', function() {
+                    // 他のセルの選択状態を解除
+                    document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
+                    // クリックしたセルを選択状態にする
+                    this.classList.add('selected');
+                    
+                    // 選択された日付を保持し、画面のテキストを更新
+                    selectedDate = this.dataset.date;
+                    selectedDateText.innerText = `📅 選択中: ${month + 1}月${day}日`;
+                    submitBtn.disabled = false; // ボタンを活性化
+                });
+
+                calendarGrid.appendChild(dayDiv);
+            }
+        }
+
+        // 起動時にカレンダーを描画
+        generateCalendar();
+
+        // 送信処理
         document.getElementById('shiftForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!selectedDate) return;
+
             const errorArea = document.getElementById('errorArea');
             const successArea = document.getElementById('successArea');
             errorArea.innerHTML = '';
             successArea.innerHTML = '';
 
             const payload = {
-                date: shiftDateInput.value,
+                date: selectedDate,
                 startTime: startTimeSelect.value,
                 endTime: endTimeSelect.value
             };
