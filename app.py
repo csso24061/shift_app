@@ -20,7 +20,6 @@ system_settings = {
 submitted_shifts = []
 shift_id_counter = 1
 
-# 🧮 1分単位の精密給与計算関数
 def calculate_salary(start_time_str, end_time_str):
     start_h, start_m = map(int, start_time_str.split(':'))
     end_h, end_m = map(int, end_time_str.split(':'))
@@ -28,7 +27,6 @@ def calculate_salary(start_time_str, end_time_str):
     end_total = end_h * 60 + end_m
 
     BASE_HOURLY_RATE = 1200
-    # 1分あたりの基本レート
     BASE_MINUTE_RATE = BASE_HOURLY_RATE / 60.0
 
     total_minutes = end_total - start_total
@@ -40,34 +38,28 @@ def calculate_salary(start_time_str, end_time_str):
     current_time = start_total
     minutes_worked = 0
     
-    # 1分ごとにステータスを判定して加算
     while current_time < end_total:
-        is_night = (1320 <= current_time < 1440)  # 22:00 ～ 24:00 (深夜判定)
-        is_overtime = (minutes_worked >= 480)     # 8時間（480分）超過判定
+        is_night = (1320 <= current_time < 1440)  # 22:00 ～ 24:00
+        is_overtime = (minutes_worked >= 480)     # 8時間（480分）超過
         
-        # 各種手当率の計算
         if is_overtime and is_night:
-            # 重複割増（1.50倍 = 基本1.0 + 残業0.25 + 深夜0.25）
             basic_pay += BASE_MINUTE_RATE
             overtime_pay += BASE_MINUTE_RATE * 0.25
             night_pay += BASE_MINUTE_RATE * 0.25
         elif is_overtime:
-            # 残業割増（1.25倍 = 基本1.0 + 残業0.25）
             basic_pay += BASE_MINUTE_RATE
             overtime_pay += BASE_MINUTE_RATE * 0.25
         elif is_night:
-            # 深夜割増（1.25倍 = 基本1.0 + 深夜0.25）
             basic_pay += BASE_MINUTE_RATE
             night_pay += BASE_MINUTE_RATE * 0.25
         else:
-            # 通常
             basic_pay += BASE_MINUTE_RATE
             
         current_time += 1
         minutes_worked += 1
 
     return {
-        "totalHours": round(total_hours, 2), # 1分単位のため、時間表示は少数第2位までに推奨
+        "totalHours": round(total_hours, 2),
         "baseRate": BASE_HOURLY_RATE,
         "basicPay": round(basic_pay),
         "overtimePay": round(overtime_pay),
