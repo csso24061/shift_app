@@ -205,7 +205,7 @@
         </div>
     </div>
 
-    <!-- メイン業務画面（初期状態は非表示） -->
+    <!-- メイン業務画面 -->
     <div id="main-view" class="hidden">
         <header>
             <h1>シフト・勤怠管理システム</h1>
@@ -364,7 +364,6 @@
 
     <!-- FullCalendar JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales/ja.global.min.js"></script>
 
     <script>
         const API_BASE = 'http://localhost:5001/api';
@@ -384,7 +383,6 @@
         function initCalendar() {
             const calendarEl = document.getElementById('calendar');
             calendar = new FullCalendar.Calendar(calendarEl, {
-                locale: 'ja',
                 initialView: 'dayGridMonth',
                 headerToolbar: {
                     left: 'prev,next today',
@@ -392,14 +390,22 @@
                     right: 'dayGridMonth,timeGridWeek'
                 },
                 editable: false,
-                selectable: true,
-                eventClick: function(info) {
-                    openShiftModal(info.event);
+                selectable: true, // クリック・範囲選択を許可
+                unselectAuto: false,
+                // カレンダーの日付マスをクリックしたときの動作（修正）
+                dateClick: function(info) {
+                    if (currentUser && currentUser.role === 'staff') {
+                        document.getElementById('shift-date').value = info.dateStr;
+                    }
                 },
+                // 範囲選択したときの動作
                 select: function(info) {
                     if (currentUser && currentUser.role === 'staff') {
                         document.getElementById('shift-date').value = info.startStr;
                     }
+                },
+                eventClick: function(info) {
+                    openShiftModal(info.event);
                 }
             });
             calendar.render();
@@ -460,6 +466,13 @@
                 document.getElementById('attendance-admin-view').classList.add('hidden');
                 document.getElementById('shift-date').value = new Date().toISOString().split('T')[0];
             }
+
+            // メイン画面が表示された直後にカレンダーサイズを再計算させて正常描画する
+            setTimeout(() => {
+                if (calendar) {
+                    calendar.updateSize();
+                }
+            }, 100);
 
             loadNotifications();
             refreshData();
