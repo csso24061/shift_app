@@ -22,18 +22,42 @@
         .submit-btn { width: 100%; padding: 12px; background: #1c64f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
         .submit-btn:hover { background: #1a56db; }
         
-        /* 💰 給与表示ボックスのスタイル */
         .success-box { margin-top: 20px; padding: 15px; background: #def7ec; color: #03543f; border-radius: 4px; }
         .salary-spec { background: white; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #0e9f6e; color: #333;}
         .salary-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.95rem; }
         .salary-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; border-top: 1px solid #ddd; padding-top: 5px; margin-top: 5px; color: #0e9f6e; }
+
+        /* 📅 提出履歴一覧（カレンダー風リスト）のスタイル */
+        .history-section { margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px; }
+        .history-title { font-size: 1.2rem; color: #333; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .history-list { display: flex; flex-direction: column; gap: 10px; }
+        .history-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            background: #fff; 
+            padding: 12px; 
+            border-radius: 6px; 
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .history-date { 
+            background: #e1effe; 
+            color: #1e429f; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            font-size: 0.9rem;
+        }
+        .history-time { font-weight: 500; color: #4b5563; }
+        .history-pay { color: #0e9f6e; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h1>📅 希望シフト提出</h1>
-        <p class="subtitle">【機能①】Pythonによる給与・各種手当の自動計算</p>
+        <p class="subtitle">【機能②】提出したシフトの履歴一覧表示</p>
 
         <form id="shiftForm">
             <div class="form-group">
@@ -56,13 +80,26 @@
             <button type="submit" class="submit-btn">希望シフトを送信</button>
         </form>
 
+        <!-- 今回の即時受付メッセージを表示する場所 -->
         <div id="successArea"></div>
+
+        <!-- 📅 ここに提出済みの履歴が溜まっていきます -->
+        <div class="history-section">
+            <div class="history-title">
+                <span>📋 提出済みの希望一覧</span>
+            </div>
+            <div id="historyList" class="history-list">
+                <!-- JavaScriptでここに履歴カードを追加します -->
+            </div>
+        </div>
     </div>
 
     <script>
         const startTimeSelect = document.getElementById('startTime');
         const endTimeSelect = document.getElementById('endTime');
+        const historyList = document.getElementById('historyList');
         
+        // 30分刻みの選択肢を生成
         for (let hour = 0; hour < 24; hour++) {
             for (let min of ["00", "30"]) {
                 const hh = String(hour).padStart(2, '0');
@@ -100,11 +137,12 @@
                     errorArea.innerHTML = `<div class="error-banner">${result.message}</div>`;
                 } else {
                     const calc = result.data.calculation;
+                    
+                    // 1. 今回送信した分の結果を表示
                     successArea.innerHTML = `
                         <div class="success-box">
                             <h3>${result.message}</h3>
                             <p><strong>勤務時間:</strong> ${result.data.startTime} ～ ${result.data.endTime} (${calc.totalHours}時間)</p>
-                            
                             <div class="salary-spec">
                                 <div class="salary-row"><span>基本給 (時給¥${calc.baseRate}):</span> <span>¥${calc.basicPay.toLocaleString()}</span></div>
                                 <div class="salary-row"><span>残業手当 (8h超/25%UP):</span> <span>¥${calc.overtimePay.toLocaleString()}</span></div>
@@ -113,6 +151,23 @@
                             </div>
                         </div>
                     `;
+
+                    // 2. 📅 画面下部の一覧リストに新しい履歴カードを追加
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    
+                    // 日付の見た目を「2026-07-14」から「7月14日」に少し見やすく変換
+                    const dateParts = result.data.date.split('-');
+                    const formattedDate = dateParts.length === 3 ? `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日` : result.data.date;
+
+                    historyItem.innerHTML = `
+                        <span class="history-date">${formattedDate}</span>
+                        <span class="history-time">${result.data.startTime} ～ ${result.data.endTime}</span>
+                        <span class="history-pay">¥${calc.totalPay.toLocaleString()}</span>
+                    `;
+                    
+                    // 新しいものほど上に表示されるように、リストの先頭に追加
+                    historyList.insertBefore(historyItem, historyList.firstChild);
                 }
             } catch (err) {
                 errorArea.innerHTML = `<div class="error-banner">⚠️ Flaskサーバーに接続できません。app.pyが起動しているか確認してください。</div>`;
