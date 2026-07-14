@@ -4,9 +4,9 @@ from flask_cors import CORS
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app) # フロントエンド（HTMLファイル）からの通信を許可
+CORS(app) # フロントエンドからの通信を許可
 
-# データベース設定 (SQLiteを使用)
+# データベース設定
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shifts.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -14,29 +14,26 @@ db = SQLAlchemy(app)
 # ----------------------------------------
 # データベースモデル定義
 # ----------------------------------------
-
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False) # 'staff01', 'admin01'
-    password = db.Column(db.String(100), nullable=False)            # 'password123'
-    name = db.Column(db.String(100), nullable=False)                 # '山田 太郎'
-    role = db.Column(db.String(20), nullable=False)                  # 'manager', 'staff'
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    role = db.Column(db.String(20), nullable=False)
 
 class Shift(db.Model):
     __tablename__ = 'shifts'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), nullable=False)              # 申請者のユーザーID
-    date = db.Column(db.String(20), nullable=False)                  # '2026-07-14'
-    start_time = db.Column(db.String(10), nullable=False)            # '09:00'
-    end_time = db.Column(db.String(10), nullable=False)              # '18:00'
-    status = db.Column(db.String(20), default='applied')             # 'applied', 'confirmed'
+    username = db.Column(db.String(50), nullable=False)
+    date = db.Column(db.String(20), nullable=False)
+    start_time = db.Column(db.String(10), nullable=False)
+    end_time = db.Column(db.String(10), nullable=False)
+    status = db.Column(db.String(20), default='applied')
 
 # ----------------------------------------
 # APIルート定義
 # ----------------------------------------
-
-# 🔓 ログインAPI
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json() or {}
@@ -47,16 +44,11 @@ def login():
     if user:
         return jsonify({
             "status": "success",
-            "user": {
-                "username": user.username,
-                "name": user.name,
-                "role": user.role
-            }
+            "user": { "username": user.username, "name": user.name, "role": user.role }
         }), 200
     else:
         return jsonify({"status": "error", "message": "IDまたはパスワードが違います"}), 401
 
-# 📅 シフト一覧取得API
 @app.route('/api/shifts', methods=['GET'])
 def get_shifts():
     try:
@@ -85,33 +77,24 @@ def get_shifts():
                 "endTime": s.end_time,
                 "status": s.status,
                 "calculation": {
-                    "totalHours": round(hours, 1),
-                    "totalPay": total_pay,
-                    "basicPay": basic_pay,
-                    "overtimePay": 0,
-                    "nightPay": 0
+                    "totalHours": round(hours, 1), "totalPay": total_pay, "basicPay": basic_pay, "overtimePay": 0, "nightPay": 0
                 }
             })
         return jsonify({"status": "success", "shifts": results}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# 📝 シフト申請・登録API
 @app.route('/api/shift-submit', methods=['POST'])
 def shift_submit():
     data = request.get_json() or {}
     new_shift = Shift(
-        username=data.get('username'),
-        date=data.get('date'),
-        start_time=data.get('startTime'),
-        end_time=data.get('endTime'),
-        status='applied'
+        username=data.get('username'), date=data.get('date'),
+        start_time=data.get('startTime'), end_time=data.get('endTime'), status='applied'
     )
     db.session.add(new_shift)
     db.session.commit()
     return jsonify({"status": "success"}), 200
 
-# ⚙️ 管理者用：シフト更新・削除API
 @app.route('/api/admin/shift-update', methods=['POST'])
 def admin_shift_update():
     data = request.get_json() or {}
@@ -133,7 +116,6 @@ def admin_shift_update():
     db.session.commit()
     return jsonify({"status": "success"}), 200
 
-# ❌ スタッフ自身による申請キャンセルAPI
 @app.route('/api/shift-cancel', methods=['POST'])
 def shift_cancel():
     data = request.get_json() or {}
@@ -144,7 +126,7 @@ def shift_cancel():
         return jsonify({"status": "success"}), 200
     return jsonify({"status": "error", "message": "確定済みのシフトは削除できません"}), 400
 
-# 📢 各種ダミー設定・通知用API
+# 📢 【締切日機能】の設定データ
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
     return jsonify({
@@ -152,6 +134,7 @@ def get_settings():
         "settings": {"deadlineDate": "毎月25日", "closingDate": "月末", "paymentDate": "翌月15日"}
     }), 200
 
+# 📢 【通知機能】のメッセージデータ
 @app.route('/api/notifications', methods=['POST'])
 def get_notifications():
     return jsonify({
@@ -165,11 +148,12 @@ def get_notifications():
 with app.app_context():
     db.create_all()
     
+    # スタッフ登録
     if not User.query.filter_by(username='staff01').first():
         staff = User(username='staff01', password='password123', name='山田 太郎', role='staff')
         db.session.add(staff)
         
-    # 管理者の初期パスワードを別の「adminpassword」に指定
+    # 管理者登録 (パスワード: adminpassword / 名前: 管理者)
     if not User.query.filter_by(username='admin01').first():
         admin = User(username='admin01', password='adminpassword', name='管理者', role='manager')
         db.session.add(admin)
@@ -177,5 +161,4 @@ with app.app_context():
     db.session.commit()
 
 if __name__ == '__main__':
-    # ポート番号を 5001 に固定して起動
     app.run(debug=True, port=5001)

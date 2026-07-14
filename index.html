@@ -61,7 +61,7 @@
 
 <div id="mainContainer" class="login-container">
     
-    <!-- 1. ログインカード (初期状態は空欄) -->
+    <!-- 1. ログインカード -->
     <div id="loginCard" class="card" style="margin-bottom: 0;">
         <h2 class="login-title">🔐 シフト管理システム</h2>
         <div class="form-group">
@@ -84,6 +84,7 @@
 
         <div id="alertBanner" class="alert-banner"></div>
 
+        <!-- 📢 ここに締切日設定が表示されます -->
         <div class="card" style="padding:15px; background: #eff6ff; border-left: 4px solid var(--primary); margin-bottom: 15px;">
             <p id="systemSettingsText" style="font-size:0.9rem; color:#1e40af; font-weight:500;"></p>
         </div>
@@ -94,7 +95,6 @@
         </div>
 
         <div class="flex-box">
-            <!-- 左側：カレンダー＆シフト申請 -->
             <div id="calendarZone" class="card">
                 <h2 id="calendarTitle">📅 シフトカレンダー</h2>
                 <p id="selectedDateText" style="font-weight: bold; color: var(--primary); margin-bottom: 10px;">📅 日付を選択してください</p>
@@ -112,7 +112,6 @@
                 </div>
             </div>
 
-            <!-- 右側：シフト一覧 -->
             <div class="card">
                 <h2 id="listTitle">📋 シフト一覧</h2>
                 <div id="shiftList"></div>
@@ -192,6 +191,7 @@
         } catch (err) { alert('⚠️ ログイン通信に失敗しました。サーバーが起動しているか確認してください。'); }
     }
 
+    // 📢 締切日表示処理
     async function loadSystemSettings() {
         const res = await fetch(`${API_URL}/settings`); const data = await res.json();
         if (data.status === 'success') {
@@ -199,6 +199,7 @@
         }
     }
 
+    // 📢 通知（アラート表示）処理
     async function checkNotifications() {
         if (userRole === 'manager') return;
         const res = await fetch(`${API_URL}/notifications`, {
@@ -297,7 +298,6 @@
             const item = document.createElement('div'); item.className = 'shift-item';
             const calc = shift.calculation;
             const statusBadge = shift.status === 'confirmed' ? '<span class="badge badge-confirmed">確定</span>' : '<span class="badge badge-applied">承認待ち</span>';
-            
             const displayName = shift.name ? shift.name : shift.username;
 
             let htmlStr = `
@@ -394,7 +394,6 @@
         mainContainer.className = 'login-container';
         document.body.style.alignItems = 'center';
         
-        // ログアウト時にフォームの入力値をリセット
         document.getElementById('userId').value = '';
         document.getElementById('password').value = '';
     }
