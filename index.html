@@ -23,15 +23,12 @@
         button:hover { background: var(--primary-hover); }
         button:disabled { background: #9ca3af; cursor: not-allowed; }
         
-        /* 🔒 ログイン画面の視認性向上・中央配置 */
         .login-container { max-width: 420px; width: 100%; margin: 0 auto; }
         .login-title { text-align: center; justify-content: center; font-size: 1.6rem; color: #111827; margin-bottom: 25px; font-weight: 700; }
         
-        /* 🚨 期限通知警告バナー */
         .alert-banner { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1rem; display: none; background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
 
-        /* カレンダースタイル */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 15px; }
         .day-name { text-align: center; font-weight: bold; padding: 5px; font-size: 0.85rem; color: #6b7280; }
         .calendar-day { background: #f9fafb; border: 1px solid #e5e7eb; min-height: 75px; padding: 6px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s; font-weight: 500; }
@@ -55,7 +52,6 @@
         .btn-danger { background: var(--danger); } .btn-danger:hover { background: #dc2626; }
         .btn-success { background: var(--success); } .btn-success:hover { background: #059669; }
 
-        /* 給与サマリーパネル */
         .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
         .summary-title { font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px; font-weight: bold; }
         .summary-amount { font-size: 2rem; font-weight: bold; }
@@ -126,7 +122,8 @@
 </div>
 
 <script>
-    const API_URL = 'http://127.0.0.1:5000/api';
+    // APIの向き先を 5001 に変更
+    const API_URL = 'http://127.0.0.1:5001/api';
     let currentLoggedInUser = '';
     let currentLoggedInName = '';
     let userRole = '';
@@ -296,7 +293,6 @@
             const calc = shift.calculation;
             const statusBadge = shift.status === 'confirmed' ? '<span class="badge badge-confirmed">確定</span>' : '<span class="badge badge-applied">承認待ち</span>';
             
-            // 💡 IDではなく、バックエンドからマッピングして返された「氏名(フルネーム)」を表示
             const displayName = shift.name ? shift.name : shift.username;
 
             let htmlStr = `

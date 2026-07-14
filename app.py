@@ -36,7 +36,7 @@ class Shift(db.Model):
 # APIルート定義
 # ----------------------------------------
 
-# 🔓 ログインAPI（不具合対策：ユーザー情報と役割、フルネームを確実に返す）
+# 🔓 ログインAPI
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json() or {}
@@ -56,18 +56,16 @@ def login():
     else:
         return jsonify({"status": "error", "message": "IDまたはパスワードが違います"}), 401
 
-# 📅 シフト一覧取得API（ユーザー情報をマッピングしてフルネームを含めて返す）
+# 📅 シフト一覧取得API
 @app.route('/api/shifts', methods=['GET'])
 def get_shifts():
     try:
         shifts = Shift.query.all()
-        # ユーザーIDからフルネームを引くための辞書を作成
         users = User.query.all()
         user_map = {u.username: u.name for u in users}
 
         results = []
         for s in shifts:
-            # 勤務時間から簡単な給与計算ロジック（時給1,200円固定、深夜手当などの仮計算）
             try:
                 fmt = '%H:%M'
                 tdelta = datetime.strptime(s.end_time, fmt) - datetime.strptime(s.start_time, fmt)
@@ -81,7 +79,7 @@ def get_shifts():
             results.append({
                 "id": s.id,
                 "username": s.username,
-                "name": user_map.get(s.username, s.username), # フルネームをマッピング（なければID）
+                "name": user_map.get(s.username, s.username),
                 "date": s.date,
                 "startTime": s.start_time,
                 "endTime": s.end_time,
@@ -156,7 +154,6 @@ def get_settings():
 
 @app.route('/api/notifications', methods=['POST'])
 def get_notifications():
-    # 25日直前の提出期限ポップアップ用ダミーアラート
     return jsonify({
         "status": "success",
         "alerts": [{"message": "🚨 シフトの提出期限（25日）が近づいています。未提出の方は申請をお願いします。"}]
@@ -175,4 +172,5 @@ with app.app_context():
         db.session.commit()
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # ポート番号を 5001 に固定して起動
+    app.run(debug=True, port=5001)
