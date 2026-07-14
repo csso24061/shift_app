@@ -229,38 +229,32 @@ def get_notifications():
 def get_payslip():
     data = request.get_json() or {}
     username = data.get('username')
-    
-    today = datetime.today()
-    first_day_this_month = today.replace(day=1)
-    last_day_last_month = first_day_this_month - timedelta(days=1)
-    last_month_str = last_day_last_month.strftime('%Y-%m')
-
     shifts = Shift.query.filter(
         Shift.username == username,
-        Shift.status == 'confirmed',
-        Shift.date.like(f"{last_month_str}%")
-    ).order_by(Shift.date).all()
-
-    total_hours = 0.0
-    total_pay = 0
-    details = []
-
+        Shift.status == 'confirmed'
+    ).order_by(Shift.date.desc()).all()
+    total_hours=0
+    total_pay=0
+    details=[]
     for s in shifts:
-        hours, pay = calculate_pay(s.start_time, s.end_time, s.break_time)
-        total_hours += hours
-        total_pay += pay
+        hours,pay=calculate_pay(s.start_time,s.end_time,s.break_time)
+        total_hours+=hours
+        total_pay+=pay
         details.append({
-            "date": s.date, "time": f"{s.start_time}～{s.end_time}",
-            "breakTime": s.break_time, "hours": hours, "pay": pay
+            "date":s.date,
+            "startTime":s.start_time,
+            "endTime":s.end_time,
+            "breakTime":s.break_time,
+            "hours":hours,
+            "pay":pay
         })
-
     return jsonify({
-        "status": "success",
-        "targetMonth": last_month_str,
-        "totalHours": round(total_hours, 1),
-        "totalPay": total_pay,
-        "details": details
-    }), 200
+        "status":"success",
+        "targetMonth":"全期間",
+        "totalHours":round(total_hours,1),
+        "totalPay":total_pay,
+        "details":details
+    })
 
 with app.app_context():
     db.create_all()
