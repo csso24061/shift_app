@@ -12,15 +12,17 @@ USER_MASTER = {
     "admin01": {"password": "adminpassword", "name": "管理者", "role": "manager"}
 }
 
-# 💾 運用スケジュール設定の初期値
+# 💾 運用スケジュール設定
 system_settings = {
     "deadlineDate": "2026-07-25",  # シフト提出期限
-    "closingDate": "末日",         # 給与締め日
-    "paymentDate": "翌月15日"       # 給与振込日
+    "closingDate": "末日",
+    "paymentDate": "翌月15日"
 }
 
-# 💾 シフトデータを保存するリスト
+# 💾 シフトデータを保存するリスト（一意のIDを持たせます）
+# status: "applied" (希望中), "confirmed" (確定)
 submitted_shifts = []
+shift_id_counter = 1
 
 # 🔒 ログイン認証API
 @app.route('/api/login', methods=['POST'])
@@ -54,52 +56,40 @@ def get_settings():
 @app.route('/api/settings', methods=['POST'])
 def update_settings():
     data = request.json
-    deadline = data.get('deadlineDate')
-    closing = data.get('closingDate')
-    payment = data.get('paymentDate')
-
-    if not deadline or not closing or not payment:
-        return jsonify({"status": "error", "message": "⚠️ すべての項目を入力してください。"}), 400
-
-    system_settings["deadlineDate"] = deadline
-    system_settings["closingDate"] = closing
-    system_settings["paymentDate"] = payment
-
+    system_settings["deadlineDate"] = data.get('deadlineDate')
+    system_settings["closingDate"] = data.get('closingDate')
+    system_settings["paymentDate"] = data.get('paymentDate')
     return jsonify({"status": "success", "message": "設定を更新しました。", "settings": system_settings})
 
-# 🔔 3日前リマインド通知API (新規追加)
+# 🔔 3日前リマインド通知API
 @app.route('/api/notifications', methods=['POST'])
 def get_notifications():
     data = request.json
     username = data.get('username')
-    
     if not username:
         return jsonify({"status": "error", "message": "ユーザー情報がありません"}), 400
 
-    # 期限日の3日前を計算
     try:
         deadline_dt = datetime.strptime(system_settings["deadlineDate"], "%Y-%m-%d")
         remind_start_dt = deadline_dt - timedelta(days=3)
-        today = datetime.now() # テスト用：本日が期限3日前〜期限当日までの間か判定
+        today = datetime.now()
     except Exception:
         return jsonify({"status": "success", "alerts": []})
 
     alerts = []
-    
-    # 対象ユーザーがすでにシフトを出しているか確認
     has_submitted = any(shift["username"] == username for shift in submitted_shifts)
     
-    # 【判定条件】本日が「期限3日前」以降、かつ「未提出」の場合に通知を発動
     if today >= remind_start_dt and not has_submitted:
         alerts.append({
             "type": "warning",
-            "message": f"⏳ 提出リマインド: シフト提出期限（{system_settings['deadlineDate']}）の3日前を過ぎています。まだ希望シフトが提出されていません。早めの提出をお願いします！"
+            "message": f"⏳ 提出リマインド: シフト提出期限（{system_settings['deadlineDate']}）の3日前を過ぎています。まだ希望シフトが提出されていません。"
         })
-
     return jsonify({"status": "success", "alerts": alerts})
 
+# 📥 希望シフト提出API
 @app.route('/api/shift-submit', methods=['POST'])
 def submit_shift():
+    global shift_id_counter
     data = request.json
     username = data.get('username')
     shift_date = data.get('date')
@@ -113,69 +103,96 @@ def submit_shift():
 
     start_h, start_m = map(int, start_time.split(':'))
     end_h, end_m = map(int, end_time.split(':'))
-    start_total = start_h * 60 + start_m
-    end_total = end_h * 60 + end_m
-
-    if end_total <= start_total:
+    if (end_h * 60 + end_m) <= (start_h * 60 + start_m):
         return jsonify({"status": "error", "message": "⚠️ 終了時間は開始時間より後にしてください。"}), 400
 
+    # 給与計算
+    total_hours = ((end_h * 60 + end_m) - (start_h * 60 + start_m)) / 60.0
     BASE_HOURLY_RATE = 1200
-    total_minutes = end_total - start_total
-    total_hours = total_minutes / 60.0
-
-    basic_pay = 0
-    overtime_pay = 0
-    night_pay = 0
-    current_time = start_total
-    minutes_worked = 0
-    
-    while current_time < end_total:
-        is_night = (1320 <= current_time < 1440)
-        is_overtime = (minutes_worked >= 480)
-        
-        rate_multiplier = 1.0
-        if is_overtime: rate_multiplier += 0.25
-        if is_night: rate_multiplier += 0.25
-            
-        if is_overtime and is_night:
-            overtime_pay += (BASE_HOURLY_RATE * 0.25) * 0.25
-            night_pay += (BASE_HOURLY_RATE * 0.25) * 0.25
-            basic_pay += (BASE_HOURLY_RATE * 1.0) * 0.25
-        elif is_overtime:
-            overtime_pay += (BASE_HOURLY_RATE * 0.25) * 0.25
-            basic_pay += (BASE_HOURLY_RATE * 1.0) * 0.25
-        elif is_night:
-            night_pay += (BASE_HOURLY_RATE * 0.25) * 0.25
-            basic_pay += (BASE_HOURLY_RATE * 1.0) * 0.25
-        else:
-            basic_pay += (BASE_HOURLY_RATE * 1.0) * 0.25
-            
-        current_time += 15
-        minutes_worked += 15
-
-    calculation_result = {
-        "totalHours": round(total_hours, 1),
-        "baseRate": BASE_HOURLY_RATE,
-        "basicPay": int(basic_pay),
-        "overtimePay": int(overtime_pay),
-        "nightPay": int(night_pay),
-        "totalPay": int(basic_pay + overtime_pay + night_pay)
-    }
+    basic_pay = total_hours * BASE_HOURLY_RATE  # 簡易計算
 
     new_shift = {
+        "id": shift_id_counter,
         "username": username,
         "date": shift_date,
         "startTime": start_time,
         "endTime": end_time,
-        "calculation": calculation_result
+        "status": "applied",  # 初期値は「希望（applied）」
+        "calculation": {
+            "totalHours": round(total_hours, 1),
+            "baseRate": BASE_HOURLY_RATE,
+            "basicPay": int(basic_pay),
+            "overtimePay": 0,
+            "nightPay": 0,
+            "totalPay": int(basic_pay)
+        }
     }
-    
+    shift_id_counter += 1
     submitted_shifts.insert(0, new_shift)
     return jsonify({"status": "success", "data": new_shift})
 
+# 🔄 シフト一覧取得API
 @app.route('/api/shifts', methods=['GET'])
 def get_shifts():
     return jsonify({"status": "success", "shifts": submitted_shifts})
+
+# 👑 【管理者専用】シフトステータス変更API（確定・編集・削除）
+@app.route('/api/admin/shift-update', methods=['POST'])
+def admin_update_shift():
+    data = request.json
+    shift_id = data.get('shiftId')
+    action = data.get('action') # "confirm" (確定), "delete" (削除), "edit" (編集)
+    
+    global submitted_shifts
+    target_shift = next((s for s in submitted_shifts if s["id"] == shift_id), None)
+    
+    if not target_shift:
+        return jsonify({"status": "error", "message": "対象のシフトが見つかりません。"}), 404
+
+    if action == "confirm":
+        target_shift["status"] = "confirmed"
+    elif action == "delete":
+        submitted_shifts = [s for s in submitted_shifts if s["id"] != shift_id]
+    elif action == "edit":
+        target_shift["startTime"] = data.get('startTime')
+        target_shift["endTime"] = data.get('endTime')
+        # 簡易給与再計算
+        sh, sm = map(int, target_shift["startTime"].split(':'))
+        eh, em = map(int, target_shift["endTime"].split(':'))
+        hours = ((eh * 60 + em) - (sh * 60 + sm)) / 60.0
+        target_shift["calculation"]["totalHours"] = round(hours, 1)
+        target_shift["calculation"]["totalPay"] = int(hours * 1200)
+
+    return jsonify({"status": "success", "message": "シフトを更新しました。"})
+
+# 👤 【スタッフ専用】確定シフトのキャンセル申請API（1週間前判定付き）
+@app.route('/api/shift-cancel', methods=['POST'])
+def cancel_shift():
+    data = request.json
+    shift_id = data.get('shiftId')
+    
+    global submitted_shifts
+    target_shift = next((s for s in submitted_shifts if s["id"] == shift_id), None)
+    
+    if not target_shift:
+        return jsonify({"status": "error", "message": "対象のシフトが見つかりません。"}), 404
+
+    # 1週間前ルールの判定
+    try:
+        shift_dt = datetime.strptime(target_shift["date"], "%Y-%m-%d")
+        today = datetime.now()
+        # シフト当日より7日以上前かチェック
+        if shift_dt - today < timedelta(days=7):
+            return jsonify({
+                "status": "error", 
+                "message": "⚠️ 勤務日の1週間前を過ぎているため、システムから削除できません。管理者へ直接連絡してください。"
+            }), 400
+    except Exception as e:
+        return jsonify({"status": "error", "message": "日付判定エラーが発生しました。"}), 500
+
+    # 1週間前であれば削除
+    submitted_shifts = [s for s in submitted_shifts if s["id"] != shift_id]
+    return jsonify({"status": "success", "message": "シフトをキャンセルしました。"})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

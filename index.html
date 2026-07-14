@@ -3,438 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📅 希望シフト提出＆管理システム</title>
+    <title>📅 希望＆確定シフト管理システム</title>
     <style>
-        .container {
-            max-width: 600px;
-            margin: 30px auto;
-            padding: 20px;
-            font-family: sans-serif;
-            background: #f9f9f9;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        
-        /* 🔒 ログイン画面のスタイル */
-        .login-box {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
+        .container { max-width: 650px; margin: 30px auto; padding: 20px; font-family: sans-serif; background: #f9f9f9; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .login-box { background: white; padding: 30px; border-radius: 8px; border: 1px solid #ddd; }
         .login-box h2 { color: #1c64f2; margin-bottom: 10px; text-align: center; }
         .login-box p { color: #666; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.5; background: #f3f4f6; padding: 10px; border-radius: 4px; }
-        .login-group { display: flex; flex-direction: column; margin-bottom: 15px; text-align: left; }
+        .login-group { display: flex; flex-direction: column; margin-bottom: 15px; }
         .login-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
         .login-input { width: 100%; padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         
-        /* メインアプリ表示切り替え */
         .app-content { display: none; }
         .app-content.active { display: block; }
         .login-content { display: block; }
         .login-content.hidden { display: none; }
 
-        /* ヘッダーとユーザー情報 */
         .user-info-bar { display: flex; justify-content: space-between; align-items: center; background: #f0f5ff; padding: 10px 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #1c64f2; }
         .user-name { font-weight: bold; color: #1e429f; }
         .logout-btn { background: #e5e7eb; color: #374151; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
-        .logout-btn:hover { background: #d1d5db; }
 
-        /* 📢 運用情報バナー */
-        .schedule-banner { background: #fff8e1; border-left: 4px solid #ffb300; color: #b78103; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; font-weight: bold; line-height: 1.4; }
+        .schedule-banner { background: #fff8e1; border-left: 4px solid #ffb300; color: #b78103; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; font-weight: bold; }
+        .alert-box { background: #fde8e8; border: 1px solid #f8b4b4; color: #9b1c1c; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; font-weight: bold; }
 
-        /* 🚨 自動リマインド通知エリア */
-        .alert-box { background: #fde8e8; border: 1px solid #f8b4b4; color: #9b1c1c; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; font-weight: bold; line-height: 1.4; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.9; } }
-
-        /* 🔄 モード切り替えタブ */
         .mode-tab-container { display: flex; background: #e5e7eb; border-radius: 6px; padding: 4px; margin-bottom: 25px; }
-        .mode-tab { flex: 1; text-align: center; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: all 0.2s; border: none; font-size: 1rem; }
+        .mode-tab { flex: 1; text-align: center; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 4px; border: none; font-size: 1rem; }
         .mode-tab.active { background: white; color: #1c64f2; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .mode-content { display: none; }
         .mode-content.active { display: block; }
 
-        .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
         .calendar-container { background: white; padding: 15px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 25px; }
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1rem; margin-bottom: 15px; color: #1e429f; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
-        .day-name { font-weight: bold; font-size: 0.8rem; color: #666; padding-bottom: 5px; }
-        .calendar-day { padding: 10px 0; border-radius: 4px; cursor: pointer; font-size: 0.95rem; background: #f3f4f6; transition: all 0.2s; }
-        .calendar-day:hover { background: #e1effe; color: #1c64f2; }
-        .calendar-day.selected { background: #1c64f2 !important; color: white !important; font-weight: bold; }
-        .calendar-day.today { border: 2px solid #1c64f2; font-weight: bold; }
-
-        .form-section { background: #fff; padding: 20px; border-radius: 6px; border: 1px solid #e5e7eb; margin-bottom: 20px; }
-        .selected-date-display { font-size: 1.1rem; font-weight: bold; color: #1c64f2; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f5ff; }
-        .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
-        .form-group label { margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
-        select, input[type="text"], input[type="date"] { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .error-banner { background: #fde8e8; color: #e02424; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; text-align: center;}
-        .submit-btn { width: 100%; padding: 12px; background: #1c64f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
-        .submit-btn:hover { background: #1a56db; }
+        .day-name { font-weight: bold; font-size: 0.8rem; color: #666; }
+        .calendar-day { padding: 10px 0; border-radius: 4px; cursor: pointer; font-size: 0.95rem; background: #f3f4f6; position: relative; }
+        .calendar-day.selected { background: #1c64f2 !important; color: white !important; }
+        .calendar-day.today { border: 2px solid #1c64f2; }
         
-        .success-box { margin-top: 20px; padding: 15px; background: #def7ec; color: #03543f; border-radius: 4px; }
-        .salary-spec { background: #f9f9f9; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #0e9f6e; color: #333;}
-        .salary-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.95rem; }
-        .salary-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; border-top: 1px solid #ddd; padding-top: 5px; margin-top: 5px; color: #0e9f6e; }
+        /* 🔵 カレンダー用確定マーク */
+        .calendar-day .status-dot { font-size: 0.7rem; display: block; margin-top: 2px; font-weight: bold; }
+        .calendar-day.has-applied .status-dot { color: #f2994a; }
+        .calendar-day.has-confirmed { background: #def7ec; border: 1px dashed #31c48d; }
+        .calendar-day.has-confirmed .status-dot { color: #0e9f6e; }
 
-        /* 管理者画面用 */
-        .manager-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .summary-card { background: white; padding: 15px; border-radius: 6px; border: 1px solid #ddd; text-align: center; }
-        .summary-card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #666; }
-        .summary-card p { margin: 0; font-size: 1.6rem; font-weight: bold; color: #1c64f2; }
-        .summary-card p.total-cost { color: #e02424; }
-
-        .settings-panel { background: #f3f4f6; border: 1px solid #e5e7eb; padding: 20px; border-radius: 6px; margin-bottom: 25px; }
-        .settings-panel h2 { margin-top: 0; font-size: 1.1rem; color: #1e429f; margin-bottom: 15px; }
-
-        .history-section { margin-top: 20px; }
-        .history-title { font-size: 1.2rem; color: #333; margin-bottom: 15px; font-weight: bold; }
-        .history-list { display: flex; flex-direction: column; gap: 10px; }
+        .form-section { background: #fff; padding: 20px; border-radius: 6px; border: 1px solid #e5e7eb; }
+        .selected-date-display { font-size: 1.1rem; font-weight: bold; color: #1c64f2; margin-bottom: 15px; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+        .submit-btn { width: 100%; padding: 12px; background: #1c64f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+        .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+        
+        /* 履歴・申請系UI */
+        .history-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         .history-item { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb; }
-        .history-left { display: flex; align-items: center; gap: 10px; }
-        .history-date { background: #e1effe; color: #1e429f; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.9rem;}
-        .history-name { font-weight: bold; color: #333; }
-        .history-time { font-weight: 500; color: #4b5563; font-size: 0.95rem; }
-        .history-pay { color: #0e9f6e; font-weight: bold; }
+        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;}
+        .status-badge.applied { background: #feecdc; color: #b25e00; }
+        .status-badge.confirmed { background: #def7ec; color: #03543f; }
+        
+        .action-btn { font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; margin-left: 5px; }
+        .btn-cancel { background: #fde8e8; color: #e02424; }
+        .btn-cancel:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
+        .btn-confirm { background: #e1effe; color: #1c64f2; }
+        .btn-delete { background: #fde8e8; color: #e02424; }
+        .btn-edit { background: #f3f4f6; color: #374151; }
     </style>
 </head>
 <body>
 
     <div class="container">
-
-        <!-- ================= 🔑 ログイン画面 ================= -->
+        <!-- 🔑 ログイン画面 -->
         <div id="loginSection" class="login-content">
             <div class="login-box">
                 <h2>🔐 シフト管理システム</h2>
                 <p>
-                    <strong>【テスト用アカウント一覧】</strong><br>
+                    <strong>【テストユーザー】</strong><br>
                     ・スタッフ1：ID: <code>staff01</code> / Pass: <code>password123</code><br>
                     ・スタッフ2：ID: <code>staff02</code> / Pass: <code>password456</code><br>
-                    ・管理者用：ID: <code>admin01</code> / Pass: <code>adminpassword</code>
+                    ・管理者：ID: <code>admin01</code> / Pass: <code>adminpassword</code>
                 </p>
                 <div id="loginErrorArea"></div>
                 <form id="loginForm">
-                    <div class="login-group">
-                        <label>ユーザーID:</label>
-                        <input type="text" id="loginUserId" class="login-input" placeholder="ユーザーIDを入力" required autocomplete="off">
-                    </div>
-                    <div class="login-group">
-                        <label>パスワード:</label>
-                        <input type="password" id="loginPassword" class="login-input" placeholder="パスワードを入力" required>
-                    </div>
+                    <div class="login-group"><label>ユーザーID:</label><input type="text" id="loginUserId" class="login-input" required autocomplete="off"></div>
+                    <div class="login-group"><label>パスワード:</label><input type="password" id="loginPassword" class="login-input" required></div>
                     <button type="submit" class="submit-btn">ログインする</button>
                 </form>
             </div>
         </div>
 
-        <!-- ================= 📅 メインアプリ画面 ================= -->
+        <!-- 📅 メインアプリ画面 -->
         <div id="appSection" class="app-content">
-            
-            <!-- 👤 ユーザー情報バー -->
             <div class="user-info-bar">
-                <div>ログイン中: <span id="currentUserDisplay" class="user-name">未ログイン</span> さん</div>
+                <div>ログイン中: <span id="currentUserDisplay" class="user-name">-</span> さん</div>
                 <button id="logoutBtn" class="logout-btn">ログアウト</button>
             </div>
 
-            <!-- 📢 運用情報バナー (締め日や振込日などの可視化) -->
-            <div id="scheduleBanner" class="schedule-banner">
-                ⏳ シフト提出期限：<span id="bannerDeadline">-</span><br>
-                💰 給与締め日：<span id="bannerClosing">-</span> | 🏦 振込予定日：<span id="bannerPayment">-</span>
-            </div>
-
-            <!-- 🚨 自動リマインド通知エリア (新規追加) -->
+            <div id="scheduleBanner" class="schedule-banner">⏳ シフト提出期限：<span id="bannerDeadline">-</span></div>
             <div id="notificationArea"></div>
 
-            <!-- 🔄 モード切り替えタブ -->
             <div class="mode-tab-container" id="tabContainer">
-                <button class="mode-tab active" id="tabStaff">👤 スタッフ用（提出）</button>
-                <button class="mode-tab" id="tabManager">👑 管理者用（管理・集計）</button>
+                <button class="mode-tab active" id="tabStaff">👤 スタッフ画面</button>
+                <button class="mode-tab" id="tabManager">👑 管理者画面</button>
             </div>
 
-            <!-- ================= スタッフモード画面 ================= -->
+            <!-- 👤 スタッフモード -->
             <div id="contentStaff" class="mode-content active">
-                <h1>📅 希望シフト提出</h1>
-                <p class="subtitle">カレンダーから日付を選んでシフトを送信してください</p>
-
+                <h3>希望シフトをカレンダーから提出</h3>
                 <div class="calendar-container">
-                    <div class="calendar-header">
-                        <span id="calendarMonth">2026年 7月</span>
-                    </div>
                     <div class="calendar-grid" id="calendarGrid"></div>
                 </div>
 
                 <div class="form-section">
                     <div class="selected-date-display" id="selectedDateText">👉 カレンダーの日付を選択してください</div>
-                    
                     <form id="shiftForm">
-                        <div class="form-group">
-                            <label>⏰ 開始時間:</label>
-                            <select id="startTime"></select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>⏰ 終了時間:</label>
-                            <select id="endTime"></select>
-                        </div>
-
-                        <div id="errorArea"></div>
-
-                        <button type="submit" class="submit-btn" id="submitBtn" disabled>希望シフトを送信</button>
+                        <div class="form-group"><label>開始時間:</label><select id="startTime"></select></div>
+                        <div class="form-group"><label>終了時間:</label><select id="endTime"></select></div>
+                        <button type="submit" class="submit-btn" id="submitBtn" disabled>希望シフトを提出</button>
                     </form>
                 </div>
 
-                <div id="successArea"></div>
-
-                <!-- 👤 自分専用の履歴リスト -->
-                <div class="history-section">
-                    <div class="history-title">📋 あなたの提出済みシフト一覧</div>
-                    <div id="staffHistoryList" class="history-list"></div>
-                </div>
+                <div class="history-list" id="staffHistoryList"></div>
             </div>
 
-            <!-- ================= 管理者モード画面 ================= -->
+            <!-- 👑 管理者モード -->
             <div id="contentManager" class="mode-content">
-                <h1>👑 シフト管理＆人件費集計</h1>
-                <p class="subtitle">提出されたシフトの状況と、概算人件費の集計データです</p>
-
-                <!-- 🛠️ スケジュール設定パネル -->
-                <div class="settings-panel">
-                    <h2>⚙️ 運用スケジュール設定</h2>
-                    <form id="settingsForm">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label>📅 希望シフト提出期限:</label>
-                                <input type="date" id="inputDeadline" required>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label>💰 給与締め日:</label>
-                                <input type="text" id="inputClosing" placeholder="例: 末日" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>🏦 給与振込日:</label>
-                            <input type="text" id="inputPayment" placeholder="例: 翌月15日" required>
-                        </div>
-                        <button type="submit" class="submit-btn" style="padding: 8px; font-size: 0.9rem; background: #0e9f6e;">スケジュール設定を更新する</button>
-                    </form>
-                </div>
-
-                <div class="manager-summary">
-                    <div class="summary-card">
-                        <h3>総労働時間</h3>
-                        <p id="totalHoursDisplay">0.0 時間</p>
-                    </div>
-                    <div class="summary-card">
-                        <h3>想定総人件費</h3>
-                        <p id="totalCostDisplay" class="total-cost">¥0</p>
-                    </div>
-                </div>
-
-                <div class="history-section">
-                    <div class="history-title">📋 提出済みシフト一覧 (全員分)</div>
-                    <div id="managerHistoryList" class="history-list"></div>
-                </div>
+                <h3>👑 管理者コントロールパネル</h3>
+                <div class="history-list" id="managerHistoryList"></div>
             </div>
-
         </div>
-
     </div>
 
     <script>
+        // 基本変数
+        let currentLoggedInUser = "";
+        let currentLoggedInRole = "";
+        let selectedDate = "";
+        let allShifts = [];
+
+        // 要素取得
         const loginSection = document.getElementById('loginSection');
         const appSection = document.getElementById('appSection');
         const loginForm = document.getElementById('loginForm');
-        const loginUserIdInput = document.getElementById('loginUserId');
-        const loginPasswordInput = document.getElementById('loginPassword');
-        const loginErrorArea = document.getElementById('loginErrorArea');
         const currentUserDisplay = document.getElementById('currentUserDisplay');
         const logoutBtn = document.getElementById('logoutBtn');
-
         const tabContainer = document.getElementById('tabContainer');
         const tabStaff = document.getElementById('tabStaff');
         const tabManager = document.getElementById('tabManager');
         const contentStaff = document.getElementById('contentStaff');
         const contentManager = document.getElementById('contentManager');
-
+        const calendarGrid = document.getElementById('calendarGrid');
         const startTimeSelect = document.getElementById('startTime');
         const endTimeSelect = document.getElementById('endTime');
-        const selectedDateText = document.getElementById('selectedDateText');
         const submitBtn = document.getElementById('submitBtn');
-        const calendarGrid = document.getElementById('calendarGrid');
-        
+        const selectedDateText = document.getElementById('selectedDateText');
         const staffHistoryList = document.getElementById('staffHistoryList');
         const managerHistoryList = document.getElementById('managerHistoryList');
-        const totalHoursDisplay = document.getElementById('totalHoursDisplay');
-        const totalCostDisplay = document.getElementById('totalCostDisplay');
-
-        // スケジュールUI用の要素
-        const bannerDeadline = document.getElementById('bannerDeadline');
-        const bannerClosing = document.getElementById('bannerClosing');
-        const bannerPayment = document.getElementById('bannerPayment');
-        const inputDeadline = document.getElementById('inputDeadline');
-        const inputClosing = document.getElementById('inputClosing');
-        const inputPayment = document.getElementById('inputPayment');
-        const settingsForm = document.getElementById('settingsForm');
         const notificationArea = document.getElementById('notificationArea');
 
-        let currentLoggedInUser = "";
-        let currentLoggedInRole = "";
-        let selectedDate = "";
-
-        // ⚙️ 運用設定スケジュールを取得する処理
-        async function fetchSettings() {
-            try {
-                const response = await fetch('http://127.0.0.1:5000/api/settings');
-                const result = await response.json();
-                if (result.status === "success") {
-                    const settings = result.settings;
-                    
-                    const dl = new Date(settings.deadlineDate);
-                    bannerDeadline.innerText = `${dl.getFullYear()}年${dl.getMonth()+1}月${dl.getDate()}日`;
-                    bannerClosing.innerText = settings.closingDate;
-                    bannerPayment.innerText = settings.paymentDate;
-
-                    inputDeadline.value = settings.deadlineDate;
-                    inputClosing.value = settings.closingDate;
-                    inputPayment.value = settings.paymentDate;
-                }
-            } catch (err) {
-                console.error("設定取得エラー:", err);
-            }
-        }
-
-        // 🔔 3日前リマインド通知を取得・表示する処理 (新規追加)
-        async function checkNotifications() {
-            if (!currentLoggedInUser || currentLoggedInRole === 'manager') {
-                notificationArea.innerHTML = '';
-                return;
-            }
-            try {
-                const response = await fetch('http://127.0.0.1:5000/api/notifications', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: currentLoggedInUser })
-                });
-                const result = await response.json();
-                if (result.status === "success" && result.alerts.length > 0) {
-                    notificationArea.innerHTML = result.alerts.map(a => `<div class="alert-box">${a.message}</div>`).join('');
-                } else {
-                    notificationArea.innerHTML = '';
-                }
-            } catch (err) {
-                console.error("通知取得エラー:", err);
-            }
-        }
-
-        // ⚙️ スケジュール設定の更新処理（管理者機能）
-        settingsForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const payload = {
-                deadlineDate: inputDeadline.value,
-                closingDate: inputClosing.value,
-                paymentDate: inputPayment.value
-            };
-
-            try {
-                const response = await fetch('http://127.0.0.1:5000/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    alert("✅ 運用スケジュール設定を更新しました。");
-                    await fetchSettings();
-                    checkNotifications();
-                } else {
-                    alert("⚠️ エラー: " + result.message);
-                }
-            } catch (err) {
-                alert("⚠️ 設定の保存に失敗しました。");
-            }
-        });
-
-        // 🔑 ログイン処理 (API通信)
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            loginErrorArea.innerHTML = '';
-
-            const payload = {
-                userId: loginUserIdInput.value.trim(),
-                password: loginPasswordInput.value
-            };
-
-            try {
-                const response = await fetch('http://127.0.0.1:5000/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-
-                if (!response.ok) {
-                    loginErrorArea.innerHTML = `<div class="error-banner">${result.message}</div>`;
-                } else {
-                    currentLoggedInUser = result.user.name;
-                    currentLoggedInRole = result.user.role;
-                    currentUserDisplay.innerText = currentLoggedInUser;
-
-                    loginSection.classList.add('hidden');
-                    appSection.classList.add('active');
-
-                    if (currentLoggedInRole === 'manager') {
-                        tabContainer.style.display = 'flex';
-                        switchToManagerMode(); 
-                    } else {
-                        tabContainer.style.display = 'none';
-                        switchToStaffMode();
-                    }
-
-                    generateCalendar();
-                    await fetchSettings();
-                    checkNotifications(); // ログイン時にリマインド対象か確認
-                    fetchAndRenderShifts();
-                }
-            } catch (err) {
-                loginErrorArea.innerHTML = `<div class="error-banner">⚠️ Flaskサーバーに接続できません。</div>`;
-            }
-        });
-
-        // 🔓 ログアウト処理
-        logoutBtn.addEventListener('click', () => {
-            currentLoggedInUser = "";
-            currentLoggedInRole = "";
-            loginUserIdInput.value = "";
-            loginPasswordInput.value = "";
-            appSection.classList.remove('active');
-            loginSection.classList.remove('hidden');
-            document.getElementById('successArea').innerHTML = '';
-            document.getElementById('errorArea').innerHTML = '';
-            notificationArea.innerHTML = '';
-        });
-
-        function switchToStaffMode() {
-            tabStaff.classList.add('active');
-            tabManager.classList.remove('active');
-            contentStaff.classList.add('active');
-            contentManager.classList.remove('active');
-            fetchAndRenderShifts();
-            checkNotifications();
-        }
-
-        function switchToManagerMode() {
-            tabManager.classList.add('active');
-            tabStaff.classList.remove('active');
-            contentManager.classList.add('active');
-            contentStaff.classList.remove('active');
-            fetchAndRenderShifts();
-        }
-
-        tabStaff.addEventListener('click', switchToStaffMode);
-        tabManager.addEventListener('click', switchToManagerMode);
-
-        // 時間プルダウン生成
+        // プルダウン生成
         for (let hour = 0; hour < 24; hour++) {
             for (let min of ["00", "30"]) {
                 const hh = String(hour).padStart(2, '0');
@@ -446,7 +168,69 @@
         startTimeSelect.value = "09:00";
         endTimeSelect.value = "18:00";
 
-        // カレンダー生成
+        // ログイン
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = { userId: document.getElementById('loginUserId').value, password: loginPasswordInput = document.getElementById('loginPassword').value };
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+                if (response.ok) {
+                    currentLoggedInUser = result.user.name;
+                    currentLoggedInRole = result.user.role;
+                    currentUserDisplay.innerText = currentLoggedInUser;
+                    loginSection.classList.add('hidden');
+                    appSection.classList.add('active');
+
+                    if (currentLoggedInRole === 'manager') {
+                        tabContainer.style.display = 'flex';
+                        switchToManagerMode();
+                    } else {
+                        tabContainer.style.display = 'none';
+                        switchToStaffMode();
+                    }
+                    await refreshData();
+                } else {
+                    alert(result.message);
+                }
+            } catch (err) { alert("サーバーに接続できません。"); }
+        });
+
+        logoutBtn.addEventListener('click', () => { location.reload(); });
+
+        function switchToStaffMode() {
+            tabStaff.classList.add('active'); tabManager.classList.remove('active');
+            contentStaff.classList.add('active'); contentManager.classList.remove('active');
+        }
+        function switchToManagerMode() {
+            tabManager.classList.add('active'); tabStaff.classList.remove('active');
+            contentManager.classList.add('active'); contentStaff.classList.remove('active');
+        }
+        tabStaff.addEventListener('click', switchToStaffMode);
+        tabManager.addEventListener('click', switchToManagerMode);
+
+        async function refreshData() {
+            // 設定取得
+            const sRes = await fetch('http://127.0.0.1:5000/api/settings');
+            const sData = await sRes.json();
+            document.getElementById('bannerDeadline').innerText = sData.settings.deadlineDate;
+
+            // リマインド通知取得
+            const nRes = await fetch('http://127.0.0.1:5000/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentLoggedInUser }) });
+            const nData = await nRes.json();
+            notificationArea.innerHTML = nData.alerts ? nData.alerts.map(a => `<div class="alert-box">${a.message}</div>`).join('') : '';
+
+            // シフトデータ取得
+            const shRes = await fetch('http://127.0.0.1:5000/api/shifts');
+            const shData = await shRes.json();
+            allShifts = shData.shifts;
+
+            generateCalendar();
+            renderStaffHistory();
+            renderManagerList();
+        }
+
+        // カレンダー描画（ステータス反映）
         function generateCalendar() {
             calendarGrid.innerHTML = `
                 <div class="day-name">日</div><div class="day-name">月</div><div class="day-name">火</div>
@@ -455,15 +239,10 @@
             const now = new Date();
             const year = now.getFullYear();
             const month = now.getMonth();
-            document.getElementById('calendarMonth').innerText = `${year}年 ${month + 1}月`;
-
             const firstDayIndex = new Date(year, month, 1).getDay();
             const lastDay = new Date(year, month + 1, 0).getDate();
-            const todayDate = now.getDate();
 
-            for (let i = 0; i < firstDayIndex; i++) {
-                calendarGrid.appendChild(document.createElement('div'));
-            }
+            for (let i = 0; i < firstDayIndex; i++) calendarGrid.appendChild(document.createElement('div'));
 
             for (let day = 1; day <= lastDay; day++) {
                 const dayDiv = document.createElement('div');
@@ -472,7 +251,18 @@
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 dayDiv.dataset.date = dateStr;
 
-                if (day === todayDate && month === now.getMonth()) dayDiv.classList.add('today');
+                // 該当日のシフトステータスを確認
+                const dayShifts = allShifts.filter(s => s.date === dateStr && s.username === currentLoggedInUser);
+                if (dayShifts.length > 0) {
+                    const hasConfirmed = dayShifts.some(s => s.status === 'confirmed');
+                    if (hasConfirmed) {
+                        dayDiv.classList.add('has-confirmed');
+                        dayDiv.innerHTML += `<span class="status-dot">確定</span>`;
+                    } else {
+                        dayDiv.classList.add('has-applied');
+                        dayDiv.innerHTML += `<span class="status-dot">希望中</span>`;
+                    }
+                }
 
                 dayDiv.addEventListener('click', function() {
                     document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
@@ -485,117 +275,128 @@
             }
         }
 
-        // 🔄 シフト履歴の取得と描画
-        async function fetchAndRenderShifts() {
-            try {
-                const response = await fetch('http://127.0.0.1:5000/api/shifts');
-                const result = await response.json();
-                
-                if (result.status === "success") {
-                    const shifts = result.shifts;
-                    
-                    staffHistoryList.innerHTML = '';
-                    const myShifts = shifts.filter(s => s.username === currentLoggedInUser);
-                    
-                    if (myShifts.length === 0) {
-                        staffHistoryList.innerHTML = '<p style="color: #666; text-align: center; font-size: 0.9rem;">まだ提出したシフトはありません。</p>';
-                    } else {
-                        myShifts.forEach(shift => {
-                            const dateParts = shift.date.split('-');
-                            const formattedDate = `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日`;
-                            const item = document.createElement('div');
-                            item.className = 'history-item';
-                            item.innerHTML = `
-                                <span class="history-date">${formattedDate}</span>
-                                <span class="history-time">${shift.startTime} ～ ${shift.endTime} (${shift.calculation.totalHours}時間)</span>
-                                <span class="history-pay">概算: ¥${shift.calculation.totalPay.toLocaleString()}</span>
-                            `;
-                            staffHistoryList.appendChild(item);
-                        });
-                    }
+        // スタッフ用履歴・申請状況（1週間判定ボタン付き）
+        function renderStaffHistory() {
+            staffHistoryList.innerHTML = '<h4>📋 提出状況と結果</h4>';
+            const myShifts = allShifts.filter(s => s.username === currentLoggedInUser);
 
-                    if (currentLoggedInRole === 'manager') {
-                        managerHistoryList.innerHTML = '';
-                        let totalHours = 0;
-                        let totalCost = 0;
-
-                        if (shifts.length === 0) {
-                            managerHistoryList.innerHTML = '<p style="color: #666; text-align: center;">まだ誰も提出していません。</p>';
-                        } else {
-                            shifts.forEach(shift => {
-                                totalHours += shift.calculation.totalHours;
-                                totalCost += shift.calculation.totalPay;
-
-                                const dateParts = shift.date.split('-');
-                                const formattedDate = `${parseInt(dateParts[1])}月${parseInt(dateParts[2])}日`;
-                                const item = document.createElement('div');
-                                item.className = 'history-item';
-                                item.innerHTML = `
-                                    <div class="history-left">
-                                        <span class="history-date">${formattedDate}</span>
-                                        <span class="history-name">${shift.username}</span>
-                                    </div>
-                                    <span class="history-time">${shift.startTime} ～ ${shift.endTime} (${shift.calculation.totalHours}h)</span>
-                                    <span class="history-pay">¥${shift.calculation.totalPay.toLocaleString()}</span>
-                                `;
-                                managerHistoryList.appendChild(item);
-                            });
-                        }
-                        totalHoursDisplay.innerText = `${totalHours.toFixed(1)} 時間`;
-                        totalCostDisplay.innerText = `¥${totalCost.toLocaleString()}`;
-                    }
-                }
-            } catch (err) {
-                console.error("データ取得エラー:", err);
+            if (myShifts.length === 0) {
+                staffHistoryList.innerHTML += '<p>提出済みのシフトはありません。</p>';
+                return;
             }
+
+            myShifts.forEach(shift => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                
+                // 1週間前の判定
+                const shiftDate = new Date(shift.date);
+                const oneWeekLater = new Date();
+                oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+                const isUnderOneWeek = shiftDate < oneWeekLater;
+
+                const statusText = shift.status === 'confirmed' ? '確定' : '希望中';
+                const statusClass = shift.status === 'confirmed' ? 'confirmed' : 'applied';
+
+                item.innerHTML = `
+                    <div>
+                        <strong>${shift.date}</strong> (${shift.startTime}～${shift.endTime})
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div>
+                        <button class="action-btn btn-cancel" 
+                                ${isUnderOneWeek ? 'disabled title="1週間前を過ぎています。直接連絡してください。"' : ''} 
+                                onclick="cancelShift(${shift.id})">
+                            ${isUnderOneWeek ? 'キャンセル不可(直電)' : 'キャンセル'}
+                        </button>
+                    </div>
+                `;
+                staffHistoryList.appendChild(item);
+            });
         }
 
-        // 📤 シフト送信
+        // 管理者用コントロールリスト（変更・削除・確定権限あり）
+        function renderManagerList() {
+            managerHistoryList.innerHTML = '<h4>📋 スタッフのシフト一覧</h4>';
+            if (allShifts.length === 0) {
+                managerHistoryList.innerHTML += '<p>提出されたシフトはありません。</p>';
+                return;
+            }
+
+            allShifts.forEach(shift => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                const statusText = shift.status === 'confirmed' ? '確定済み' : '未確定';
+                const statusClass = shift.status === 'confirmed' ? 'confirmed' : 'applied';
+
+                item.innerHTML = `
+                    <div>
+                        <strong>${shift.username}</strong> - ${shift.date} (${shift.startTime}～${shift.endTime})
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div>
+                        ${shift.status !== 'confirmed' ? `<button class="action-btn btn-confirm" onclick="updateShift(${shift.id}, 'confirm')">確定する</button>` : ''}
+                        <button class="action-btn btn-edit" onclick="editShiftPrompt(${shift.id}, '${shift.startTime}', '${shift.endTime}')">編集</button>
+                        <button class="action-btn btn-delete" onclick="updateShift(${shift.id}, 'delete')">削除</button>
+                    </div>
+                `;
+                managerHistoryList.appendChild(item);
+            });
+        }
+
+        // スタッフのキャンセルアクション
+        async function cancelShift(shiftId) {
+            if (!confirm("このシフトをキャンセルしますか？")) return;
+            const res = await fetch('http://127.0.0.1:5000/api/shift-cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shiftId })
+            });
+            const data = await res.json();
+            alert(data.message);
+            await refreshData();
+        }
+
+        // 管理者アクション (確定・削除)
+        async function updateShift(shiftId, action) {
+            if (action === 'delete' && !confirm("このシフトを強制削除しますか？")) return;
+            const res = await fetch('http://127.0.0.1:5000/api/admin/shift-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shiftId, action })
+            });
+            const data = await res.json();
+            await refreshData();
+        }
+
+        // 管理者アクション (強制編集)
+        async function editShiftPrompt(shiftId, currentStart, currentEnd) {
+            const newStart = prompt("新しい開始時間を入力してください (例: 09:00)", currentStart);
+            if (!newStart) return;
+            const newEnd = prompt("新しい終了時間を入力してください (例: 17:00)", currentEnd);
+            if (!newEnd) return;
+
+            const res = await fetch('http://127.0.0.1:5000/api/admin/shift-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shiftId, action: 'edit', startTime: newStart, endTime: newEnd })
+            });
+            const data = await res.json();
+            alert(data.message);
+            await refreshData();
+        }
+
+        // 希望送信
         document.getElementById('shiftForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!selectedDate || !currentLoggedInUser) return;
-
-            const errorArea = document.getElementById('errorArea');
-            const successArea = document.getElementById('successArea');
-            errorArea.innerHTML = '';
-            successArea.innerHTML = '';
-
-            const payload = {
-                username: currentLoggedInUser,
-                date: selectedDate,
-                startTime: startTimeSelect.value,
-                endTime: endTimeSelect.value
-            };
-
-            try {
-                const response = await fetch('http://127.0.0.1:5000/api/shift-submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-
-                if (!response.ok) {
-                    errorArea.innerHTML = `<div class="error-banner">${result.message}</div>`;
-                } else {
-                    const calc = result.data.calculation;
-                    successArea.innerHTML = `
-                        <div class="success-box">
-                            <h3>✅ シフト希望を受け付けました。</h3>
-                            <p><strong>勤務時間:</strong> ${result.data.startTime} ～ ${result.data.endTime} (${calc.totalHours}時間)</p>
-                            <div class="salary-spec">
-                                <div class="salary-row"><span>基本給 (時給¥${calc.baseRate}):</span> <span>¥${calc.basicPay.toLocaleString()}</span></div>
-                                <div class="salary-row"><span>残業手当 (8h超/25%UP):</span> <span>¥${calc.overtimePay.toLocaleString()}</span></div>
-                                <div class="salary-row"><span>深夜手当 (22時以降/25%UP):</span> <span>¥${calc.nightPay.toLocaleString()}</span></div>
-                                <div class="salary-total"><span>概算支給額:</span> <span>¥${calc.totalPay.toLocaleString()}</span></div>
-                            </div>
-                        </div>
-                    `;
-                    await fetchAndRenderShifts();
-                    checkNotifications(); // シフト提出に成功したため、リマインド通知を非表示に更新
-                }
-            } catch (err) {
-                errorArea.innerHTML = `<div class="error-banner">⚠️ サーバーエラーが発生しました。</div>`;
+            const payload = { username: currentLoggedInUser, date: selectedDate, startTime: startTimeSelect.value, endTime: endTimeSelect.value };
+            const res = await fetch('http://127.0.0.1:5000/api/shift-submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (res.ok) {
+                alert("希望シフトを送信しました。");
+                await refreshData();
+            } else {
+                const data = await res.json();
+                alert(data.message);
             }
         });
     </script>
