@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>シフト管理・給与シミュレーションシステム</title>
+    <title>シフト管理システム</title>
     <style>
         :root {
             --primary: #4f46e5; --primary-hover: #4338ca;
@@ -11,16 +11,21 @@
             --bg: #f3f4f6; --surface: #ffffff; --text: #1f2937;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; }
+        body { background: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .container { width: 100%; max-width: 1100px; }
         .card { background: var(--surface); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
         h2 { margin-bottom: 20px; color: #374151; font-size: 1.4rem; display: flex; align-items: center; gap: 8px; }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; color: #4b5563; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: #4b5563; }
+        input, select { width: 100%; padding: 11px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; color: var(--text); transition: border-color 0.2s; }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
         button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
         button:hover { background: var(--primary-hover); }
         button:disabled { background: #9ca3af; cursor: not-allowed; }
+        
+        /* 🔒 ログイン画面専用の見やすさ・中央配置調整 */
+        .login-container { max-width: 420px; width: 100%; margin: 0 auto; }
+        .login-title { text-align: center; justify-content: center; font-size: 1.6rem; color: #111827; margin-bottom: 25px; font-weight: 700; }
         
         /* 🚨 期限通知警告バナーのスタイル */
         .alert-banner { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1rem; display: none; background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1); animation: pulse 2s infinite; }
@@ -59,19 +64,27 @@
 </head>
 <body>
 
-<div class="container">
-    <!-- 1. ログインカード -->
-    <div id="loginCard" class="card">
-        <h2>🔒 システムログイン</h2>
-        <div class="form-group"><label>ユーザーID</label><input type="text" id="userId" placeholder="staff01 または admin01"></div>
-        <div class="form-group"><label>パスワード</label><input type="password" id="password" value="password123"></div>
+<!-- 全体を包むコンテナ（ログインとダッシュボードで幅の切り替えを制御） -->
+<div id="mainContainer" class="login-container">
+    
+    <!-- 1. ログインカード (名称・視認性を向上) -->
+    <div id="loginCard" class="card" style="margin-bottom: 0;">
+        <h2 class="login-title">🔐 シフト管理システム</h2>
+        <div class="form-group">
+            <label for="userId">ユーザーID</label>
+            <input type="text" id="userId" placeholder="staff01 または admin01">
+        </div>
+        <div class="form-group" style="margin-bottom: 22px;">
+            <label for="password">パスワード</label>
+            <input type="password" id="password" value="password123">
+        </div>
         <button onclick="handleLogin()">ログイン</button>
     </div>
 
     <!-- 2. メインダッシュボード -->
     <div id="dashboard" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1 id="welcomeText">👋 ようこそ</h1>
+            <h1 id="welcomeText" style="font-size: 1.6rem;">👋 ようこそ</h1>
             <button onclick="handleLogout()" class="btn-sm btn-danger" style="margin-top:0;">ログアウト</button>
         </div>
 
@@ -124,6 +137,7 @@
     let selectedDate = '';
     let allShifts = [];
 
+    const mainContainer = document.getElementById('mainContainer');
     const loginCard = document.getElementById('loginCard');
     const dashboard = document.getElementById('dashboard');
     const welcomeText = document.getElementById('welcomeText');
@@ -153,8 +167,13 @@
             if (data.status === 'success') {
                 currentLoggedInUser = userId; userRole = data.user.role;
                 welcomeText.innerText = `👋 ようこそ、${data.user.name} さん (${userRole === 'manager' ? '管理者' : 'スタッフ'})`;
-                loginCard.style.display = 'none'; dashboard.style.display = 'block';
                 
+                // ログイン成功時に表示幅の切り替えと画面の切り替えを行う
+                loginCard.style.display = 'none'; 
+                dashboard.style.display = 'block';
+                mainContainer.className = 'container'; // ダッシュボード用のフルワイド幅へ変更
+                document.body.style.alignItems = 'flex-start'; // スクリプト描画後の上部合わせ
+
                 if (userRole === 'manager') {
                     calendarTitle.innerText = '⚙️ シフト代理登録・カレンダー確認';
                     listTitle.innerText = '⚙️ 全スタッフのシフト管理（承認・編集）';
@@ -179,7 +198,6 @@
         }
     }
 
-    // 🚨 期限通知チェック（ポップアップと赤色のバナーの両方を実行）
     async function checkNotifications() {
         if (userRole === 'manager') return;
         const res = await fetch(`${API_URL}/notifications`, {
@@ -190,12 +208,8 @@
         const data = await res.json();
         if (data.status === 'success' && data.alerts && data.alerts.length > 0) {
             const alertMsg = data.alerts[0].message;
-            
-            // 1. 画面上部に赤いバナーを表示
             alertBanner.innerText = alertMsg;
             alertBanner.style.display = 'block';
-            
-            // 2. ログイン直後にポップアップ（アラートダイアログ）を出す
             setTimeout(() => { alert(alertMsg); }, 100);
         } else {
             alertBanner.style.display = 'none';
@@ -318,6 +332,7 @@
         const startTime = document.getElementById('startTime').value;
         const endTime = document.getElementById('endTime').value;
         let username = currentLoggedInUser;
+        
         if (userRole === 'manager') {
             const target = document.getElementById('targetStaffId').value.trim();
             if (!target) { alert('⚠️ 対象スタッフIDを入力してください。'); return; }
@@ -332,7 +347,7 @@
         if (res.ok) { 
             alert(userRole === 'manager' ? '✅ 管理者としてシフトを登録しました。' : '✅ シフトを申請しました。'); 
             await fetchShifts();
-            await checkNotifications(); // 提出後は警告バナーを即時消去する判定のために呼ぶ
+            await checkNotifications();
         }
     }
 
@@ -370,7 +385,11 @@
     }
 
     function handleLogout() {
-        currentLoggedInUser = ''; userRole = ''; dashboard.style.display = 'none'; loginCard.style.display = 'block';
+        currentLoggedInUser = ''; userRole = ''; 
+        dashboard.style.display = 'none'; 
+        loginCard.style.display = 'block';
+        mainContainer.className = 'login-container'; // ログイン用のコンパクトな幅に戻す
+        document.body.style.alignItems = 'center'; // 中央揃えに戻す
     }
 </script>
 </body>
