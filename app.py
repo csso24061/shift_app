@@ -15,7 +15,7 @@ db = SQLAlchemy(app)
 
 # --- データベースモデル定義 ---
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)  # ← エラーを修正（主キーを設定）
+    id = db.Column(db.Integer, primary_key=True)  # 主キーを設定してエラーを修正
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     name = db.Column(db.String(50), nullable=False)
@@ -74,22 +74,22 @@ def get_shifts():
     users = {u.username: u for u in User.query.all()}
     
     shift_list = []
-    attendance_map = {} # スタッフごとの集計用
+    attendance_map = {} 
 
     for s in shifts:
         user = users.get(s.username)
         rate = user.hourly_rate if user else 1200
         hours, pay = calculate_hours_and_pay(s.start_time, s.end_time, s.break_time, rate)
 
-        # カレンダー表示用データ
+        # 【修正】カレンダーの文字表示・配置を前の状態（1行表示）に合わせました
         shift_list.append({
             'id': str(s.id),
-            'title': f"{s.name}\n{s.start_time}-{s.end_time}\n({hours}h)",
+            'title': f"{s.name} ({s.start_time}-{s.end_time})",
             'start': f"{s.date}T{s.start_time}:00",
             'end': f"{s.date}T{s.end_time}:00",
             'color': '#2ecc71' if s.status == 'confirmed' else '#f1c40f',
             'textColor': '#ffffff' if s.status == 'confirmed' else '#2c3e50',
-            # 詳細保持用
+            # 詳細情報
             'username': s.username,
             'name': s.name,
             'date': s.date,
@@ -113,7 +113,6 @@ def get_shifts():
             attendance_map[s.username]['totalPay'] += pay
             attendance_map[s.username]['daysCount'] += 1
 
-    # 小数点以下の整形
     for k in attendance_map:
         attendance_map[k]['totalHours'] = round(attendance_map[k]['totalHours'], 2)
 
@@ -221,7 +220,6 @@ def get_notifications():
 # --- 初期データの投入 ---
 def init_db():
     db.create_all()
-    # テスト用ユーザーの作成（未登録の場合のみ）
     if not User.query.filter_by(username='admin01').first():
         admin = User(username='admin01', password='adminpassword', name='管理者 太郎', role='manager', hourly_rate=0)
         staff1 = User(username='staff01', password='password123', name='スタッフ A子', role='staff', hourly_rate=1200)
