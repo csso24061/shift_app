@@ -21,14 +21,19 @@
         .error-banner { background: #fde8e8; color: #e02424; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; }
         .submit-btn { width: 100%; padding: 12px; background: #1c64f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
         .submit-btn:hover { background: #1a56db; }
+        
+        /* 💰 給与表示ボックスのスタイル */
         .success-box { margin-top: 20px; padding: 15px; background: #def7ec; color: #03543f; border-radius: 4px; }
+        .salary-spec { background: white; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #0e9f6e; color: #333;}
+        .salary-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.95rem; }
+        .salary-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; border-top: 1px solid #ddd; padding-top: 5px; margin-top: 5px; color: #0e9f6e; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h1>📅 希望シフト提出</h1>
-        <p class="subtitle">要件：HTML(JS)からPython(Flask)へデータを送信して検証</p>
+        <p class="subtitle">【機能①】Pythonによる給与・各種手当の自動計算</p>
 
         <form id="shiftForm">
             <div class="form-group">
@@ -55,7 +60,6 @@
     </div>
 
     <script>
-        // 30分刻みの時間選択肢を生成
         const startTimeSelect = document.getElementById('startTime');
         const endTimeSelect = document.getElementById('endTime');
         
@@ -63,21 +67,15 @@
             for (let min of ["00", "30"]) {
                 const hh = String(hour).padStart(2, '0');
                 const timeStr = `${hh}:${min}`;
-                
-                const optStart = new Option(timeStr, timeStr);
-                const optEnd = new Option(timeStr, timeStr);
-                startTimeSelect.add(optStart);
-                endTimeSelect.add(optEnd);
+                startTimeSelect.add(new Option(timeStr, timeStr));
+                endTimeSelect.add(new Option(timeStr, timeStr));
             }
         }
-        // 初期値設定
         startTimeSelect.value = "09:00";
         endTimeSelect.value = "18:00";
 
-        // 送信イベントの処理
         document.getElementById('shiftForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const errorArea = document.getElementById('errorArea');
             const successArea = document.getElementById('successArea');
             errorArea.innerHTML = '';
@@ -90,7 +88,6 @@
             };
 
             try {
-                // Flaskサーバー (5000番ポート) へデータを送信
                 const response = await fetch('http://127.0.0.1:5000/api/shift-submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -100,19 +97,24 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    // Flask側でエラーが発生した場合
                     errorArea.innerHTML = `<div class="error-banner">${result.message}</div>`;
                 } else {
-                    // 送信成功時
+                    const calc = result.data.calculation;
                     successArea.innerHTML = `
                         <div class="success-box">
                             <h3>${result.message}</h3>
-                            <p><strong>受け付けデータ:</strong> ${result.data.date} (${result.data.startTime} ～ ${result.data.endTime})</p>
+                            <p><strong>勤務時間:</strong> ${result.data.startTime} ～ ${result.data.endTime} (${calc.totalHours}時間)</p>
+                            
+                            <div class="salary-spec">
+                                <div class="salary-row"><span>基本給 (時給¥${calc.baseRate}):</span> <span>¥${calc.basicPay.toLocaleString()}</span></div>
+                                <div class="salary-row"><span>残業手当 (8h超/25%UP):</span> <span>¥${calc.overtimePay.toLocaleString()}</span></div>
+                                <div class="salary-row"><span>深夜手当 (22時以降/25%UP):</span> <span>¥${calc.nightPay.toLocaleString()}</span></div>
+                                <div class="salary-total"><span>概算支給額:</span> <span>¥${calc.totalPay.toLocaleString()}</span></div>
+                            </div>
                         </div>
                     `;
                 }
             } catch (err) {
-                // Flaskが起動していないなどの接続エラー
                 errorArea.innerHTML = `<div class="error-banner">⚠️ Flaskサーバーに接続できません。app.pyが起動しているか確認してください。</div>`;
             }
         });
