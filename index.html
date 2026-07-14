@@ -3,13 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📅 希望シフト提出 (MVPテスト版)</title>
-    
-    <!-- インストール不要でReactを動かすためのライブラリ読み込み -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+    <title>📅 希望シフト提出 (Flask連携版)</title>
     <style>
         .container {
             max-width: 500px;
@@ -32,113 +26,96 @@
 </head>
 <body>
 
-    <!-- Reactが組み立てた画面をはめ込む空箱 -->
-    <div id="root"></div>
+    <div class="container">
+        <h1>📅 希望シフト提出 (Flask連携版)</h1>
+        <p class="subtitle">要件：HTML(JS)からPython(Flask)へデータを送信して検証</p>
 
-    <!-- ここにReactのプログラムを書きます -->
-    <script type="text/babel">
-        const { useState } = React;
+        <form id="shiftForm">
+            <div class="form-group">
+                <label>勤務希望日:</label>
+                <input type="date" id="shiftDate">
+            </div>
 
-        function App() {
-            const [shiftDate, setShiftDate] = useState("");
-            const [startTime, setStartTime] = useState("09:00");
-            const [endTime, setEndTime] = useState("18:00");
-            const [errorMessage, setErrorMessage] = useState("");
-            const [submittedData, setSubmittedData] = useState(null);
+            <div class="form-group">
+                <label>開始時間:</label>
+                <select id="startTime"></select>
+            </div>
 
-            // 30分刻みの時間リストを生成
-            const generateTimeOptions = () => {
-                const options = [];
-                for (let hour = 0; hour < 24; hour++) {
-                    for (let min of ["00", "30"]) {
-                        const hh = String(hour).padStart(2, "0");
-                        options.push(`${hh}:${min}`);
-                    }
-                }
-                return options;
-            };
-            const timeOptions = generateTimeOptions();
+            <div class="form-group">
+                <label>終了時間:</label>
+                <select id="endTime"></select>
+            </div>
 
-            // 入力検証と送信処理
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                setErrorMessage("");
-                setSubmittedData(null);
+            <div id="errorArea"></div>
 
-                // 【検証①】日付の空チェック
-                if (!shiftDate) {
-                    setErrorMessage("⚠️ 日付を選択してください。");
-                    return;
-                }
+            <button type="submit" class="submit-btn">希望シフトを送信</button>
+        </form>
 
-                // 時間を分に変換して比較
-                const [startH, startM] = startTime.split(":").map(Number);
-                const [endH, endM] = endTime.split(":").map(Number);
-                const startTotalMinutes = startH * 60 + startM;
-                const endTotalMinutes = endH * 60 + endM;
+        <div id="successArea"></div>
+    </div>
 
-                // 【検証②】時間の逆転チェック
-                if (endTotalMinutes <= startTotalMinutes) {
-                    setErrorMessage("⚠️ 終了時間は、開始時間よりも後の時間を設定してください。");
-                    return;
-                }
-
-                // 検証通過時の処理
-                setSubmittedData({
-                    date: shiftDate,
-                    startTime: startTime,
-                    endTime: endTime,
-                });
-            };
-
-            return (
-                <div className="container">
-                    <h1>📅 希望シフト提出 (MVPテスト版)</h1>
-                    <p className="subtitle">要件：30分刻みでの希望時間入力</p>
-
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label>勤務希望日:</label>
-                            <input type="date" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} />
-                        </div>
-
-                        <div className="form-group">
-                            <label>開始時間:</label>
-                            <select value={startTime} onChange={(e) => setStartTime(e.target.value)}>
-                                {timeOptions.map((time) => (
-                                    <option key={`start-${time}`} value={time}>{time}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="form-group">
-                            <label>終了時間:</label>
-                            <select value={endTime} onChange={(e) => setEndTime(e.target.value)}>
-                                {timeOptions.map((time) => (
-                                    <option key={`end-${time}`} value={time}>{time}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {errorMessage && <div className="error-banner">{errorMessage}</div>}
-
-                        <button type="submit" className="submit-btn">希望シフトを送信</button>
-                    </form>
-
-                    {submittedData && (
-                        <div className="success-box">
-                            <h3>✅ 以下の内容で仮受付しました（30分単位）</h3>
-                            <p><strong>日付:</strong> {submittedData.date}</p>
-                            <p><strong>時間:</strong> {submittedData.startTime} ～ {submittedData.endTime}</p>
-                        </div>
-                    )}
-                </div>
-            );
+    <script>
+        // 30分刻みの時間選択肢を生成
+        const startTimeSelect = document.getElementById('startTime');
+        const endTimeSelect = document.getElementById('endTime');
+        
+        for (let hour = 0; hour < 24; hour++) {
+            for (let min of ["00", "30"]) {
+                const hh = String(hour).padStart(2, '0');
+                const timeStr = `${hh}:${min}`;
+                
+                const optStart = new Option(timeStr, timeStr);
+                const optEnd = new Option(timeStr, timeStr);
+                startTimeSelect.add(optStart);
+                endTimeSelect.add(optEnd);
+            }
         }
+        // 初期値設定
+        startTimeSelect.value = "09:00";
+        endTimeSelect.value = "18:00";
 
-        // 画面への描画処理
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        // 送信イベントの処理
+        document.getElementById('shiftForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const errorArea = document.getElementById('errorArea');
+            const successArea = document.getElementById('successArea');
+            errorArea.innerHTML = '';
+            successArea.innerHTML = '';
+
+            const payload = {
+                date: document.getElementById('shiftDate').value,
+                startTime: startTimeSelect.value,
+                endTime: endTimeSelect.value
+            };
+
+            try {
+                // Flaskサーバー (5000番ポート) へデータを送信
+                const response = await fetch('http://127.0.0.1:5000/api/shift-submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    // Flask側でエラーが発生した場合
+                    errorArea.innerHTML = `<div class="error-banner">${result.message}</div>`;
+                } else {
+                    // 送信成功時
+                    successArea.innerHTML = `
+                        <div class="success-box">
+                            <h3>${result.message}</h3>
+                            <p><strong>受け付けデータ:</strong> ${result.data.date} (${result.data.startTime} ～ ${result.data.endTime})</p>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                // Flaskが起動していないなどの接続エラー
+                errorArea.innerHTML = `<div class="error-banner">⚠️ Flaskサーバーに接続できません。app.pyが起動しているか確認してください。</div>`;
+            }
+        });
     </script>
 </body>
 </html>
