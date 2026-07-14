@@ -31,10 +31,6 @@
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 15px; }
         .day-name { text-align: center; font-weight: bold; padding: 5px; font-size: 0.85rem; color: #6b7280; }
-        /* 
-           ★ カレンダーのマスの高さを少し広げました (min-height: 75px -> 95px) 
-           これで時間が追加されてもデザインが崩れません。
-        */
         .calendar-day { background: #f9fafb; border: 1px solid #e5e7eb; min-height: 95px; padding: 6px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s; font-weight: 500; }
         .calendar-day:hover { background: #f0fdf4; border-color: var(--success); }
         .calendar-day.selected { background: #e0e7ff; border-color: var(--primary); box-shadow: 0 0 0 2px #c7d2fe; }
@@ -56,9 +52,13 @@
         .btn-danger { background: var(--danger); } .btn-danger:hover { background: #dc2626; }
         .btn-success { background: var(--success); } .btn-success:hover { background: #059669; }
 
-        .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .summary-title { font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px; font-weight: bold; }
-        .summary-amount { font-size: 2rem; font-weight: bold; }
+        /* ★ 労働時間と概算給与を表示するサマリーカードを横並びにするレイアウト */
+        .summary-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        @media (max-width: 480px) { .summary-wrapper { grid-template-columns: 1fr; } }
+        .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px; border-radius: 12px; }
+        .summary-card.time-card { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .summary-title { font-size: 0.85rem; opacity: 0.9; margin-bottom: 5px; font-weight: bold; }
+        .summary-amount { font-size: 1.8rem; font-weight: bold; }
         
         .settings-form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end; }
         @media (max-width: 768px) { .settings-form-grid { grid-template-columns: 1fr; } }
@@ -120,9 +120,25 @@
             </table>
         </div>
 
-        <div id="salarySummaryCard" class="summary-card" style="display: none;">
-            <div class="summary-title">今月の概算給与合計 (確定＋承認待ち)</div>
-            <div class="summary-amount" id="totalMonthlySalary">¥0</div>
+        <!-- ★ 今月の労働時間・賃金のサマリー表示領域（スタッフ用） -->
+        <div id="salarySummaryCard" class="summary-wrapper" style="display: none;">
+            <div class="summary-card time-card">
+                <div class="summary-title">今月の総労働時間 (確定＋申請中)</div>
+                <div class="summary-amount" id="totalMonthlyHours">0 時間</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-title">今月の概算給与合計 (確定＋申請中)</div>
+                <div class="summary-amount" id="totalMonthlySalary">¥0</div>
+            </div>
+        </div>
+
+        <!-- ★ 今月の全スタッフ合計集計表示（管理者用） -->
+        <div id="adminSummaryCard" class="card" style="display: none; background: #faf5ff; border: 1px solid #d8b4fe;">
+            <h2 style="color: #6b21a8; margin-bottom: 10px;">📊 全スタッフの今月合計 (確定＋申請中)</h2>
+            <div style="display: flex; gap: 30px; font-weight: bold; font-size: 1.2rem;">
+                <div>総配置時間: <span id="adminTotalHours" style="color: #8b5cf6;">0</span> 時間</div>
+                <div>総概算人件費: <span id="adminTotalPay" style="color: #a855f7;">¥0</span></div>
+            </div>
         </div>
 
         <div class="flex-box">
@@ -167,7 +183,11 @@
     const calendarTitle = document.getElementById('calendarTitle');
     const listTitle = document.getElementById('listTitle');
     const salarySummaryCard = document.getElementById('salarySummaryCard');
+    const totalMonthlyHours = document.getElementById('totalMonthlyHours');
     const totalMonthlySalary = document.getElementById('totalMonthlySalary');
+    const adminSummaryCard = document.getElementById('adminSummaryCard');
+    const adminTotalHours = document.getElementById('adminTotalHours');
+    const adminTotalPay = document.getElementById('adminTotalPay');
     const adminStaffSelectGroup = document.getElementById('adminStaffSelectGroup');
     const adminSettingsCard = document.getElementById('adminSettingsCard');
     const payslipCard = document.getElementById('payslipCard');
@@ -191,12 +211,17 @@
                 if (userRole === 'manager') {
                     calendarTitle.innerText = '⚙️ シフト代理登録・カレンダー確認';
                     listTitle.innerText = '⚙️ 全スタッフのシフト管理（承認・編集）';
-                    adminStaffSelectGroup.style.display = 'block'; salarySummaryCard.style.display = 'none';
-                    adminSettingsCard.style.display = 'block'; payslipCard.style.display = 'none';
+                    adminStaffSelectGroup.style.display = 'block'; 
+                    salarySummaryCard.style.display = 'none';
+                    adminSummaryCard.style.display = 'block'; // 管理者用集計を表示
+                    adminSettingsCard.style.display = 'block'; 
+                    payslipCard.style.display = 'none';
                 } else {
                     calendarTitle.innerText = '📅 希望シフトの申請';
                     listTitle.innerText = '📋 自分の申請済みシフト一覧';
-                    adminStaffSelectGroup.style.display = 'none'; salarySummaryCard.style.display = 'block';
+                    adminStaffSelectGroup.style.display = 'none'; 
+                    salarySummaryCard.style.display = 'grid'; // スタッフ用集計（横並び）を表示
+                    adminSummaryCard.style.display = 'none';
                     adminSettingsCard.style.display = 'none';
                     await checkAndRenderPayslip(); // 先月の明細を取得して表示
                 }
@@ -272,7 +297,6 @@
 
             const dayShifts = allShifts.filter(s => userRole === 'manager' ? s.date === dateStr : (s.date === dateStr && s.username === currentLoggedInUser));
             
-            /* ★ 変更ポイント: ここでカレンダー内に時間データを表示します */
             if (dayShifts.length > 0) {
                 const confirmed = dayShifts.find(s => s.status === 'confirmed');
                 if (confirmed) {
@@ -284,7 +308,7 @@
                         <span class="status-dot" style="color:#057a55; margin-top: 2px;">✅ 確定</span>
                     `;
                 } else {
-                    const applied = dayShifts[0]; // 申請中のシフト
+                    const applied = dayShifts[0];
                     dayDiv.classList.add('has-applied');
                     dayDiv.innerHTML += `
                         <div style="font-size: 0.7rem; color: #b45309; font-weight: bold; margin-top: 4px; background: #fef3c7; padding: 2px; border-radius: 4px; text-align: center; opacity: 0.9;">
@@ -306,12 +330,32 @@
 
     async function fetchShifts() {
         const res = await fetch(`${API_URL}/shifts`); const data = await res.json();
-        if (data.status === 'success') { allShifts = data.shifts; generateCalendar(); renderShiftList(); if (userRole === 'staff') calculateMonthlySalarySummary(); }
+        if (data.status === 'success') { 
+            allShifts = data.shifts; 
+            generateCalendar(); 
+            renderShiftList(); 
+            calculateMonthlySummary(); // 時間と給与の集計を実行
+        }
     }
 
-    function calculateMonthlySalarySummary() {
-        const total = allShifts.filter(s => s.username === currentLoggedInUser).reduce((sum, s) => sum + s.calculation.totalPay, 0);
-        totalMonthlySalary.innerText = `¥${total.toLocaleString()}`;
+    // ★ 今月の労働時間と給与を計算・描画する関数
+    function calculateMonthlySummary() {
+        if (userRole === 'manager') {
+            // 管理者の場合は全スタッフの総合計を計算
+            const totalHours = allShifts.reduce((sum, s) => sum + s.calculation.totalHours, 0);
+            const totalPay = allShifts.reduce((sum, s) => sum + s.calculation.totalPay, 0);
+            
+            adminTotalHours.innerText = totalHours.toFixed(1);
+            adminTotalPay.innerText = `¥${totalPay.toLocaleString()}`;
+        } else {
+            // スタッフの場合は本人の合計を計算（確定＋申請中含む）
+            const myShifts = allShifts.filter(s => s.username === currentLoggedInUser);
+            const totalHours = myShifts.reduce((sum, s) => sum + s.calculation.totalHours, 0);
+            const totalPay = myShifts.reduce((sum, s) => sum + s.calculation.totalPay, 0);
+            
+            totalMonthlyHours.innerText = `${totalHours.toFixed(1)} 時間`;
+            totalMonthlySalary.innerText = `¥${totalPay.toLocaleString()}`;
+        }
     }
 
     function renderShiftList() {
@@ -353,7 +397,7 @@
         const res = await fetch(`${API_URL}/admin/shift-update`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shiftId, action: 'confirm', breakTime })
         });
-        if (!res.ok) { const d = await res.json(); alert(d.message); return; } // 法定上限エラー表示
+        if (!res.ok) { const d = await res.json(); alert(d.message); return; }
         await fetchShifts();
     }
 
@@ -370,7 +414,7 @@
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, date: selectedDate, startTime, endTime, breakTime })
         });
-        if (!res.ok) { const d = await res.json(); alert(d.message); return; } // 法定上限エラー表示
+        if (!res.ok) { const d = await res.json(); alert(d.message); return; }
         alert('✅ シフトを登録・申請しました。'); await fetchShifts();
     }
 
@@ -388,7 +432,7 @@
             method: 'POST', headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ shiftId, action: 'edit', startTime: newStart, endTime: newEnd, breakTime: newBreak }) 
         });
-        if (!res.ok) { const d = await res.json(); alert(d.message); return; } // 法定上限エラー表示
+        if (!res.ok) { const d = await res.json(); alert(d.message); return; }
         await fetchShifts();
     }
 
