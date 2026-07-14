@@ -29,15 +29,24 @@
         .alert-banner { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1rem; display: none; background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
 
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 15px; }
+        /* カレンダー調整コントロール */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .calendar-nav-btn { width: auto; padding: 6px 14px; font-size: 0.9rem; background: #64748b; }
+        .calendar-nav-btn:hover { background: #475569; }
+        .current-month-display { font-weight: bold; font-size: 1.2rem; color: #1e293b; }
+
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 5px; }
         .day-name { text-align: center; font-weight: bold; padding: 5px; font-size: 0.85rem; color: #6b7280; }
-        .calendar-day { background: #f9fafb; border: 1px solid #e5e7eb; min-height: 95px; padding: 6px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s; font-weight: 500; }
+        .calendar-day { background: #f9fafb; border: 1px solid #e5e7eb; min-height: 105px; padding: 6px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s; font-weight: 500; }
         .calendar-day:hover { background: #f0fdf4; border-color: var(--success); }
         .calendar-day.selected { background: #e0e7ff; border-color: var(--primary); box-shadow: 0 0 0 2px #c7d2fe; }
         .calendar-day.has-applied { border-left: 4px solid var(--warning); }
         .calendar-day.has-confirmed { background: #f0fdf4; border-left: 4px solid var(--success); }
-        .status-dot { font-size: 0.7rem; color: var(--warning); font-weight: bold; margin-top: 4px; }
+        .status-dot { font-size: 0.7rem; color: var(--warning); font-weight: bold; margin-top: 2px; }
         
+        /* 手動メモの表示用スタイル */
+        .day-memo { font-size: 0.65rem; color: #ef4444; background: #fee2e2; border-radius: 3px; padding: 1px 3px; margin-top: 3px; text-align: center; word-break: break-all; font-weight: bold; }
+
         .flex-box { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media (max-width: 768px) { .flex-box { grid-template-columns: 1fr; } }
         
@@ -52,7 +61,6 @@
         .btn-danger { background: var(--danger); } .btn-danger:hover { background: #dc2626; }
         .btn-success { background: var(--success); } .btn-success:hover { background: #059669; }
 
-        /* ★ 労働時間と概算給与を表示するサマリーカードを横並びにするレイアウト */
         .summary-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         @media (max-width: 480px) { .summary-wrapper { grid-template-columns: 1fr; } }
         .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px; border-radius: 12px; }
@@ -120,21 +128,21 @@
             </table>
         </div>
 
-        <!-- ★ 今月の労働時間・賃金のサマリー表示領域（スタッフ用） -->
+        <!-- 選択中月の労働時間・賃金のサマリー表示領域（スタッフ用） -->
         <div id="salarySummaryCard" class="summary-wrapper" style="display: none;">
             <div class="summary-card time-card">
-                <div class="summary-title">今月の総労働時間 (確定＋申請中)</div>
+                <div class="summary-title"><span class="current-month-label">今</span>月の総労働時間 (確定＋申請中)</div>
                 <div class="summary-amount" id="totalMonthlyHours">0 時間</div>
             </div>
             <div class="summary-card">
-                <div class="summary-title">今月の概算給与合計 (確定＋申請中)</div>
+                <div class="summary-title"><span class="current-month-label">今</span>月の概算給与合計 (確定＋申請中)</div>
                 <div class="summary-amount" id="totalMonthlySalary">¥0</div>
             </div>
         </div>
 
-        <!-- ★ 今月の全スタッフ合計集計表示（管理者用） -->
+        <!-- 選択中月の全スタッフ合計集計表示（管理者用） -->
         <div id="adminSummaryCard" class="card" style="display: none; background: #faf5ff; border: 1px solid #d8b4fe;">
-            <h2 style="color: #6b21a8; margin-bottom: 10px;">📊 全スタッフの今月合計 (確定＋申請中)</h2>
+            <h2 style="color: #6b21a8; margin-bottom: 10px;">📊 全スタッフの<span class="current-month-label">今</span>月合計 (確定＋申請中)</h2>
             <div style="display: flex; gap: 30px; font-weight: bold; font-size: 1.2rem;">
                 <div>総配置時間: <span id="adminTotalHours" style="color: #8b5cf6;">0</span> 時間</div>
                 <div>総概算人件費: <span id="adminTotalPay" style="color: #a855f7;">¥0</span></div>
@@ -144,17 +152,36 @@
         <div class="flex-box">
             <div id="calendarZone" class="card">
                 <h2 id="calendarTitle">📅 シフトカレンダー</h2>
+                
+                <!-- ★ 変更ポイント: 月の移動コントロール要素を追加 -->
+                <div class="calendar-header">
+                    <button class="calendar-nav-btn" onclick="changeMonth(-1)">◀ 前の月</button>
+                    <div class="current-month-display" id="currentMonthDisplay">2026年07月</div>
+                    <button class="calendar-nav-btn" onclick="changeMonth(1)">次の月 ▶</button>
+                </div>
+
                 <p id="selectedDateText" style="font-weight: bold; color: var(--primary); margin-bottom: 10px;">📅 日付を選択してください</p>
                 <div class="calendar-grid" id="calendarGrid"></div>
 
                 <div id="shiftFormFields" style="margin-top:15px;">
-                    <div class="form-group"><label>開始時間</label><input type="time" id="startTime" value="09:00"></div>
-                    <div class="form-group"><label>終了時間</label><input type="time" id="endTime" value="18:00"></div>
-                    <div class="form-group"><label>休憩時間 (分)</label><input type="number" id="breakTime" value="0" min="0" step="15"></div>
-                    <div class="form-group" id="adminStaffSelectGroup" style="display: none;">
-                        <label>対象スタッフID</label><input type="text" id="targetStaffId" placeholder="例: staff01">
+                    <div style="border-bottom: 1px dashed #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;">
+                        <div class="form-group"><label>開始時間</label><input type="time" id="startTime" value="09:00"></div>
+                        <div class="form-group"><label>終了時間</label><input type="time" id="endTime" value="18:00"></div>
+                        <div class="form-group"><label>休憩時間 (分)</label><input type="number" id="breakTime" value="0" min="0" step="15"></div>
+                        <div class="form-group" id="adminStaffSelectGroup" style="display: none;">
+                            <label>対象スタッフID</label><input type="text" id="targetStaffId" placeholder="例: staff01">
+                        </div>
+                        <button id="submitBtn" onclick="submitShift()" disabled>この日付でシフトを登録・申請する</button>
                     </div>
-                    <button id="submitBtn" onclick="submitShift()" disabled>この日付でシフトを登録・申請する</button>
+
+                    <!-- ★ 変更ポイント: 手動で祝日やイベントメモを追加する欄 -->
+                    <div class="form-group" id="memoFormGroup" style="background: #fdf2f8; padding: 12px; border-radius: 8px; border: 1px solid #fbcfe8;">
+                        <label style="color: #9d174d;">📝 この日のメモ・祝日設定（画面共通）</label>
+                        <div style="display:flex; gap: 8px;">
+                            <input type="text" id="dayMemoInput" placeholder="例: 海の日、店舗イベント など">
+                            <button onclick="saveDayMemo()" id="saveMemoBtn" class="btn-success" style="width:auto; padding: 0 15px; font-size:0.9rem;" disabled>保存</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -169,6 +196,10 @@
 <script>
     const API_URL = 'http://127.0.0.1:5001/api';
     let currentLoggedInUser = ''; let currentLoggedInName = ''; let userRole = ''; let selectedDate = ''; let allShifts = [];
+    
+    // ★ カレンダー表示用の年・月状態管理用
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth(); // 0～11
 
     const mainContainer = document.getElementById('mainContainer');
     const loginCard = document.getElementById('loginCard');
@@ -191,6 +222,9 @@
     const adminStaffSelectGroup = document.getElementById('adminStaffSelectGroup');
     const adminSettingsCard = document.getElementById('adminSettingsCard');
     const payslipCard = document.getElementById('payslipCard');
+    const currentMonthDisplay = document.getElementById('currentMonthDisplay');
+    const dayMemoInput = document.getElementById('dayMemoInput');
+    const saveMemoBtn = document.getElementById('saveMemoBtn');
 
     async function handleLogin() {
         const userId = document.getElementById('userId').value.trim();
@@ -213,17 +247,17 @@
                     listTitle.innerText = '⚙️ 全スタッフのシフト管理（承認・編集）';
                     adminStaffSelectGroup.style.display = 'block'; 
                     salarySummaryCard.style.display = 'none';
-                    adminSummaryCard.style.display = 'block'; // 管理者用集計を表示
+                    adminSummaryCard.style.display = 'block';
                     adminSettingsCard.style.display = 'block'; 
                     payslipCard.style.display = 'none';
                 } else {
                     calendarTitle.innerText = '📅 希望シフトの申請';
                     listTitle.innerText = '📋 自分の申請済みシフト一覧';
                     adminStaffSelectGroup.style.display = 'none'; 
-                    salarySummaryCard.style.display = 'grid'; // スタッフ用集計（横並び）を表示
+                    salarySummaryCard.style.display = 'grid';
                     adminSummaryCard.style.display = 'none';
                     adminSettingsCard.style.display = 'none';
-                    await checkAndRenderPayslip(); // 先月の明細を取得して表示
+                    await checkAndRenderPayslip();
                 }
                 await loadSystemSettings(); await fetchShifts(); await checkNotifications();
             } else { alert('⚠️ ' + data.message); }
@@ -283,17 +317,42 @@
         if (data.status === 'success' && data.alerts.length > 0) { alertBanner.innerText = data.alerts[0].message; alertBanner.style.display = 'block'; }
     }
 
+    // ★ 前の月・次の月へ移動する関数
+    function changeMonth(offset) {
+        currentMonth += offset;
+        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        else if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        
+        generateCalendar();
+        calculateMonthlySummary();
+        renderShiftList();
+    }
+
     function generateCalendar() {
+        // ヘッダー表示の更新
+        currentMonthDisplay.innerText = `${currentYear}年${String(currentMonth + 1).padStart(2, '0')}月`;
+        document.querySelectorAll('.current-month-label').forEach(el => el.innerText = `${currentMonth + 1}`);
+
         calendarGrid.innerHTML = '<div class="day-name">日</div><div class="day-name">月</div><div class="day-name">火</div><div class="day-name">水</div><div class="day-name">木</div><div class="day-name">金</div><div class="day-name">土</div>';
-        const now = new Date(); const year = now.getFullYear(); const month = now.getMonth();
-        const firstDayIndex = new Date(year, month, 1).getDay(); const lastDay = new Date(year, month + 1, 0).getDate();
+        const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay(); const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
 
         for (let i = 0; i < firstDayIndex; i++) calendarGrid.appendChild(document.createElement('div'));
 
+        // ローカルストレージから手動追加メモの読み込み
+        const savedMemos = JSON.parse(localStorage.getItem('shift_system_memos') || '{}');
+
         for (let day = 1; day <= lastDay; day++) {
             const dayDiv = document.createElement('div'); dayDiv.className = 'calendar-day'; dayDiv.innerText = day;
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             dayDiv.dataset.date = dateStr;
+
+            // ★ 手動追加されたメモ(祝日情報など)があれば日付マスに差し込む
+            if (savedMemos[dateStr]) {
+                const memoDiv = document.createElement('div');
+                memoDiv.className = 'day-memo';
+                memoDiv.innerText = savedMemos[dateStr];
+                dayDiv.appendChild(memoDiv);
+            }
 
             const dayShifts = allShifts.filter(s => userRole === 'manager' ? s.date === dateStr : (s.date === dateStr && s.username === currentLoggedInUser));
             
@@ -322,10 +381,28 @@
             dayDiv.addEventListener('click', function() {
                 document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
                 this.classList.add('selected'); selectedDate = this.dataset.date;
-                selectedDateText.innerText = `📅 選択中: ${month + 1}月${day}日`; submitBtn.disabled = false;
+                selectedDateText.innerText = `📅 選択中: ${currentMonth + 1}月${day}日`; 
+                submitBtn.disabled = false;
+                saveMemoBtn.disabled = false;
+
+                // 選択した日のメモがあれば入力欄に初期表示
+                dayMemoInput.value = savedMemos[selectedDate] || '';
             });
             calendarGrid.appendChild(dayDiv);
         }
+    }
+
+    // ★ 手動メモを保存する関数
+    function saveDayMemo() {
+        if (!selectedDate) return;
+        const savedMemos = JSON.parse(localStorage.getItem('shift_system_memos') || '{}');
+        const text = dayMemoInput.value.trim();
+        
+        if (text) { savedMemos[selectedDate] = text; } 
+        else { delete savedMemos[selectedDate]; } // 空欄なら削除
+        
+        localStorage.setItem('shift_system_memos', JSON.stringify(savedMemos));
+        generateCalendar(); // カレンダーを再描画
     }
 
     async function fetchShifts() {
@@ -333,35 +410,43 @@
         if (data.status === 'success') { 
             allShifts = data.shifts; 
             generateCalendar(); 
+            calculateMonthlySummary();
             renderShiftList(); 
-            calculateMonthlySummary(); // 時間と給与の集計を実行
         }
     }
 
-    // ★ 今月の労働時間と給与を計算・描画する関数
+    // ★ 変更ポイント: 表示中の年月に合わせて集計対象を絞り込むロジックに修正
     function calculateMonthlySummary() {
+        // 表示中の月（例: "2026-07"）の前方一致でフィルタリング
+        const targetMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+
         if (userRole === 'manager') {
-            // 管理者の場合は全スタッフの総合計を計算
-            const totalHours = allShifts.reduce((sum, s) => sum + s.calculation.totalHours, 0);
-            const totalPay = allShifts.reduce((sum, s) => sum + s.calculation.totalPay, 0);
+            const monthlyShifts = allShifts.filter(s => s.date.startsWith(targetMonthPrefix));
+            const totalHours = monthlyShifts.reduce((sum, s) => sum + s.calculation.totalHours, 0);
+            const totalPay = monthlyShifts.reduce((sum, s) => sum + s.calculation.totalPay, 0);
             
             adminTotalHours.innerText = totalHours.toFixed(1);
             adminTotalPay.innerText = `¥${totalPay.toLocaleString()}`;
         } else {
-            // スタッフの場合は本人の合計を計算（確定＋申請中含む）
-            const myShifts = allShifts.filter(s => s.username === currentLoggedInUser);
-            const totalHours = myShifts.reduce((sum, s) => sum + s.calculation.totalHours, 0);
-            const totalPay = myShifts.reduce((sum, s) => sum + s.calculation.totalPay, 0);
+            const myMonthlyShifts = allShifts.filter(s => s.username === currentLoggedInUser && s.date.startsWith(targetMonthPrefix));
+            const totalHours = myMonthlyShifts.reduce((sum, s) => sum + s.calculation.totalHours, 0);
+            const totalPay = myMonthlyShifts.reduce((sum, s) => sum + s.calculation.totalPay, 0);
             
             totalMonthlyHours.innerText = `${totalHours.toFixed(1)} 時間`;
             totalMonthlySalary.innerText = `¥${totalPay.toLocaleString()}`;
         }
     }
 
+    // ★ 変更ポイント: シフト一覧リストも表示中の月のデータだけに絞り込んで見やすくします
     function renderShiftList() {
         shiftList.innerHTML = '';
-        const filtered = userRole === 'manager' ? allShifts : allShifts.filter(s => s.username === currentLoggedInUser);
-        if (filtered.length === 0) { shiftList.innerHTML = '<p style="color:#6b7280;">シフトはまだありません。</p>'; return; }
+        const targetMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+        
+        let filtered = userRole === 'manager' ? allShifts : allShifts.filter(s => s.username === currentLoggedInUser);
+        // 表示中の月でさらに絞り込み
+        filtered = filtered.filter(s => s.date.startsWith(targetMonthPrefix));
+
+        if (filtered.length === 0) { shiftList.innerHTML = `<p style="color:#6b7280;">${currentMonth + 1}月のシフトはまだありません。</p>`; return; }
 
         filtered.forEach(shift => {
             const item = document.createElement('div'); item.className = 'shift-item';
