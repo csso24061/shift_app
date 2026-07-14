@@ -1,170 +1,153 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from datetime import datetime, timedelta
+from flask import Flask, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime, date, timedelta
+import calendar
 
 app = Flask(__name__)
-CORS(app)
 
-USER_MASTER = {
-    "staff01": {"password": "password123", "name": "山田 太郎", "role": "staff"},
-    "staff02": {"password": "password456", "name": "佐藤 花子", "role": "staff"},
-    "admin01": {"password": "adminpassword", "name": "管理者", "role": "manager"}
-}
+# データベース設定 (SQLiteを使用)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shifts.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
-system_settings = {
-    "deadlineDate": "2026-07-25",
-    "closingDate": "末日",
-    "paymentDate": "翌月15日"
-}
+# ----------------------------------------
+# データベースモデル定義 (テーブル構造)
+# ----------------------------------------
 
-submitted_shifts = []
-shift_id_counter = 1
+# ユーザー情報テーブル
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False) # 'staff01' など
+    name = db.Column(db.String(100), nullable=False)                 # '山田 太郎' など
+    role = db.Column(db.String(20), nullable=False)                  # 'manager' または 'staff'
 
-def calculate_salary(start_time_str, end_time_str):
-    start_h, start_m = map(int, start_time_str.split(':'))
-    end_h, end_m = map(int, end_time_str.split(':'))
-    start_total = start_h * 60 + start_m
-    end_total = end_h * 60 + end_m
+# シフト情報テーブル
+class Shift(db.Model):
+    __tablename__ = 'shifts'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)                        # '2026-07-10' など
+    hours = db.Column(db.Integer, default=0)                         # 労働時間
+    pay = db.Column(db.Integer, default=0)                           # 給与（または時給から計算）
+    status = db.Column(db.String(20), default='pending')             # 'confirmed' または 'pending'
 
-    BASE_HOURLY_RATE = 1200
-    BASE_MINUTE_RATE = BASE_HOURLY_RATE / 60.0
+    # リレーションシップ定義 (Userテーブルと紐付け)
+    user = db.relationship('User', backref=db.backref('shifts', lazy=True))
 
-    total_minutes = end_total - start_total
-    total_hours = total_minutes / 60.0
 
-    basic_pay = 0.0
-    overtime_pay = 0.0
-    night_pay = 0.0
-    current_time = start_total
-    minutes_worked = 0
-    
-    while current_time < end_total:
-        is_night = (1320 <= current_time < 1440)  # 22:00 ～ 24:00
-        is_overtime = (minutes_worked >= 480)     # 8時間（480分）超過
-        
-        if is_overtime and is_night:
-            basic_pay += BASE_MINUTE_RATE
-            overtime_pay += BASE_MINUTE_RATE * 0.25
-            night_pay += BASE_MINUTE_RATE * 0.25
-        elif is_overtime:
-            basic_pay += BASE_MINUTE_RATE
-            overtime_pay += BASE_MINUTE_RATE * 0.25
-        elif is_night:
-            basic_pay += BASE_MINUTE_RATE
-            night_pay += BASE_MINUTE_RATE * 0.25
-        else:
-            basic_pay += BASE_MINUTE_RATE
-            
-        current_time += 1
-        minutes_worked += 1
+# ----------------------------------------
+# APIルート定義
+# ----------------------------------------
 
-    return {
-        "totalHours": round(total_hours, 2),
-        "baseRate": BASE_HOURLY_RATE,
-        "basicPay": round(basic_pay),
-        "overtimePay": round(overtime_pay),
-        "nightPay": round(night_pay),
-        "totalPay": round(basic_pay + overtime_pay + night_pay)
-    }
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json
-    user = USER_MASTER.get(data.get('userId'))
-    if user and user["password"] == data.get('password'):
-        return jsonify({"status": "success", "user": {"name": user["name"], "role": user["role"]}})
-    return jsonify({"status": "error", "message": "⚠️ IDまたはパスワードが間違っています。"}), 401
-
-@app.route('/api/settings', methods=['GET'])
-def get_settings():
-    return jsonify({"status": "success", "settings": system_settings})
-
-@app.route('/api/notifications', methods=['POST'])
-def get_notifications():
-    data = request.json
-    username = data.get('username')
-    try:
-        deadline_dt = datetime.strptime(system_settings["deadlineDate"], "%Y-%m-%d")
-        remind_start_dt = deadline_dt - timedelta(days=3)
-        today = datetime.now()
-    except Exception:
-        return jsonify({"status": "success", "alerts": []})
-
-    alerts = []
-    has_submitted = any(shift["username"] == username for shift in submitted_shifts)
-    if today >= remind_start_dt and not has_submitted:
-        alerts.append({"type": "warning", "message": f"⏳ 提出リマインド: シフト提出期限（{system_settings['deadlineDate']}）の3日前を過ぎています。"})
-    return jsonify({"status": "success", "alerts": alerts})
-
-@app.route('/api/shift-submit', methods=['POST'])
-def submit_shift():
-    global shift_id_counter
-    data = request.json
-    username = data.get('username')
-    shift_date = data.get('date')
-    start_time = data.get('startTime')
-    end_time = data.get('endTime')
-    
-    if not username or not shift_date or not start_time or not end_time:
-        return jsonify({"status": "error", "message": "⚠️ 入力項目が不足しています。"}), 400
-
-    calc = calculate_salary(start_time, end_time)
-
-    new_shift = {
-        "id": shift_id_counter,
-        "username": username,
-        "date": shift_date,
-        "startTime": start_time,
-        "endTime": end_time,
-        "status": "applied",
-        "calculation": calc
-    }
-    shift_id_counter += 1
-    submitted_shifts.insert(0, new_shift)
-    return jsonify({"status": "success", "data": new_shift})
-
+# 【修正】既存の「/api/shifts」のレスポンスに、各ユーザーのフルネーム情報を含める
 @app.route('/api/shifts', methods=['GET'])
 def get_shifts():
-    return jsonify({"status": "success", "shifts": submitted_shifts})
+    try:
+        # ShiftとUserをJOIN（結合）してデータを一括取得
+        shifts_data = db.session.query(Shift, User).join(User, Shift.user_id == User.id).all()
+        
+        results = []
+        for shift, user in shifts_data:
+            results.append({
+                "id": shift.id,
+                "username": user.username,
+                "name": user.name,          # 各ユーザーのフルネームを追加
+                "date": shift.date.strftime('%Y-%m-%d'),
+                "hours": shift.hours,
+                "pay": shift.pay,
+                "status": shift.status
+            })
+            
+        return jsonify({
+            "status": "success",
+            "shifts": results
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/api/admin/shift-update', methods=['POST'])
-def admin_update_shift():
-    data = request.json
-    shift_id = data.get('shiftId')
-    action = data.get('action')
+
+# 【新規追加】CSV用の前月データ取得API
+@app.route('/api/past-month-summary', methods=['POST'])
+def past_month_summary():
+    data = request.get_json() or {}
+    username = data.get('username')
+    role = data.get('role')
     
-    global submitted_shifts
-    target_shift = next((s for s in submitted_shifts if s["id"] == shift_id), None)
-    if not target_shift:
-        return jsonify({"status": "error", "message": "シフトが見つかりません。"}), 404
+    if not username or not role:
+        return jsonify({"status": "error", "message": "Missing username or role"}), 400
+        
+    try:
+        # 1. 前月（先月）の期間を計算
+        today = date.today()
+        # 今月の1日を取得
+        first_day_of_this_month = today.replace(day=1)
+        # 先月の最終日（今月1日の1日前）を取得
+        last_day_of_past_month = first_day_of_this_month - timedelta(days=1)
+        # 先月の1日を取得
+        first_day_of_past_month = last_day_of_past_month.replace(day=1)
+        
+        # 2. 基本のクエリを作成 (前月の期間内 ＆ 確定済み)
+        query = db.session.query(Shift, User).join(User, Shift.user_id == User.id)\
+            .filter(Shift.date >= first_day_of_past_month)\
+            .filter(Shift.date <= last_day_of_past_month)\
+            .filter(Shift.status == 'confirmed')
+            
+        # 3. roleによるフィルタリング
+        # managerの場合はそのまま全員分、staffの場合は自分のusernameのみ
+        if role != 'manager':
+            query = query.filter(User.username == username)
+            
+        shifts_data = query.all()
+        
+        # フロント側でCSV変換しやすいように整形
+        formatted_data = []
+        for shift, user in shifts_data:
+            formatted_data.append({
+                "name": user.name,
+                "date": shift.date.strftime('%Y-%m-%d'),
+                "hours": shift.hours,
+                "pay": shift.pay
+            })
+            
+        return jsonify({
+            "status": "success",
+            "data": formatted_data
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-    if action == "confirm":
-        target_shift["status"] = "confirmed"
-    elif action == "delete":
-        submitted_shifts = [s for s in submitted_shifts if s["id"] != shift_id]
-    elif action == "edit":
-        target_shift["startTime"] = data.get('startTime')
-        target_shift["endTime"] = data.get('endTime')
-        target_shift["calculation"] = calculate_salary(target_shift["startTime"], target_shift["endTime"])
 
-    return jsonify({"status": "success", "message": "シフトを更新しました。"})
-
-@app.route('/api/shift-cancel', methods=['POST'])
-def cancel_shift():
-    data = request.json
-    shift_id = data.get('shiftId')
-    global submitted_shifts
-    target_shift = next((s for s in submitted_shifts if s["id"] == shift_id), None)
-    
-    if not target_shift:
-        return jsonify({"status": "error", "message": "シフトが見つかりません。"}), 404
-
-    shift_dt = datetime.strptime(target_shift["date"], "%Y-%m-%d")
-    if shift_dt - datetime.now() < timedelta(days=7):
-        return jsonify({"status": "error", "message": "⚠️ 1週間前を過ぎているためシステムから削除できません。"}), 400
-
-    submitted_shifts = [s for s in submitted_shifts if s["id"] != shift_id]
-    return jsonify({"status": "success", "message": "シフトをキャンセルしました。"})
+# ----------------------------------------
+# データベース初期化とデモデータ投入（確認用）
+# ----------------------------------------
+def init_db():
+    with app.app_context():
+        db.create_all()
+        
+        # すでにデータがある場合はスキップ
+        if User.query.first():
+            return
+            
+        # デモユーザー
+        manager = User(username='admin', name='管理 太郎', role='manager')
+        staff1 = User(username='staff01', name='山田 太郎', role='staff')
+        staff2 = User(username='staff02', name='鈴木 花子', role='staff')
+        db.session.add_all([manager, staff1, staff2])
+        db.session.commit()
+        
+        # デモシフト (当月と前月のデータを投入)
+        today = date.today()
+        past_month_date = (today.replace(day=1) - timedelta(days=15)) # 確実に前月になる日付
+        
+        s1 = Shift(user_id=staff1.id, date=today, hours=8, pay=9600, status='pending')
+        s2 = Shift(user_id=staff1.id, date=past_month_date, hours=8, pay=9600, status='confirmed')
+        s3 = Shift(user_id=staff2.id, date=past_month_date, hours=6, pay=7200, status='confirmed')
+        db.session.add_all([s1, s2, s3])
+        db.session.commit()
 
 if __name__ == '__main__':
+    init_db() # 起動時にデータベースと初期データを準備
     app.run(debug=True, port=5000)
