@@ -171,7 +171,7 @@ with app.app_context():
         
     # 管理者の初期パスワードを別の「adminPass999」に指定
     if not User.query.filter_by(username='admin01').first():
-        admin = User(username='admin01', password='adminPass999', name='管理 花子', role='manager')
+        admin = User(username='admin01', password='adminpassword', name='管理 花子', role='manager')
         db.session.add(admin)
         
     db.session.commit()
