@@ -23,9 +23,11 @@
         button:hover { background: var(--primary-hover); }
         button:disabled { background: #9ca3af; cursor: not-allowed; }
         
+        /* 🔒 ログイン画面専用の見やすさ・中央配置調整 */
         .login-container { max-width: 420px; width: 100%; margin: 0 auto; }
         .login-title { text-align: center; justify-content: center; font-size: 1.6rem; color: #111827; margin-bottom: 25px; font-weight: 700; }
         
+        /* 🚨 期限通知警告バナーのスタイル */
         .alert-banner { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1rem; display: none; background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
 
@@ -39,6 +41,7 @@
         .calendar-day.has-confirmed { background: #f0fdf4; border-left: 4px solid var(--success); }
         .status-dot { font-size: 0.7rem; color: var(--warning); font-weight: bold; margin-top: 4px; }
         
+        /* ダッシュボードレイアウト */
         .flex-box { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media (max-width: 768px) { .flex-box { grid-template-columns: 1fr; } }
         
@@ -52,11 +55,8 @@
         .btn-sm { padding: 6px 12px; font-size: 0.85rem; width: auto; }
         .btn-danger { background: var(--danger); } .btn-danger:hover { background: #dc2626; }
         .btn-success { background: var(--success); } .btn-success:hover { background: #059669; }
-        
-        /* 📥 CSV出力用コンポーネント */
-        .csv-box { background: #f0fdf4; border: 1px dashed var(--success); padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .csv-text { font-size: 0.85rem; color: #166534; font-weight: 500; }
 
+        /* 給与サマリーパネル */
         .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
         .summary-title { font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px; font-weight: bold; }
         .summary-amount { font-size: 2rem; font-weight: bold; }
@@ -64,8 +64,10 @@
 </head>
 <body>
 
+<!-- 全体を包むコンテナ（ログインとダッシュボードで幅の切り替えを制御） -->
 <div id="mainContainer" class="login-container">
     
+    <!-- 1. ログインカード (名称・視認性を向上) -->
     <div id="loginCard" class="card" style="margin-bottom: 0;">
         <h2 class="login-title">🔐 シフト管理システム</h2>
         <div class="form-group">
@@ -79,24 +81,29 @@
         <button onclick="handleLogin()">ログイン</button>
     </div>
 
+    <!-- 2. メインダッシュボード -->
     <div id="dashboard" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h1 id="welcomeText" style="font-size: 1.6rem;">👋 ようこそ</h1>
             <button onclick="handleLogout()" class="btn-sm btn-danger" style="margin-top:0;">ログアウト</button>
         </div>
 
+        <!-- 🚨 シフト提出期限アラートバナー -->
         <div id="alertBanner" class="alert-banner"></div>
 
+        <!-- 締め日アナウンス設定 -->
         <div class="card" style="padding:15px; background: #eff6ff; border-left: 4px solid var(--primary); margin-bottom: 15px;">
             <p id="systemSettingsText" style="font-size:0.9rem; color:#1e40af; font-weight:500;"></p>
         </div>
 
+        <!-- 💰 月間給与合計サマリー (スタッフ用) -->
         <div id="salarySummaryCard" class="summary-card" style="display: none;">
             <div class="summary-title">今月の概算給与合計 (確定＋承認待ち)</div>
             <div class="summary-amount" id="totalMonthlySalary">¥0</div>
         </div>
 
         <div class="flex-box">
+            <!-- 左側：カレンダー＆シフト申請 -->
             <div id="calendarZone" class="card">
                 <h2 id="calendarTitle">📅 シフトカレンダー</h2>
                 <p id="selectedDateText" style="font-weight: bold; color: var(--primary); margin-bottom: 10px;">📅 日付を選択してください</p>
@@ -114,15 +121,9 @@
                 </div>
             </div>
 
+            <!-- 右側：シフト一覧 -->
             <div class="card">
                 <h2 id="listTitle">📋 シフト一覧</h2>
-                
-                <!-- 📥 月初データCSVダウンロード枠 -->
-                <div id="csvDownloadBox" class="csv-box" style="display: none;">
-                    <div class="csv-text" id="csvBoxText">📅 先月の労働実績が確定しました</div>
-                    <button onclick="downloadPastMonthCSV()" class="btn-sm btn-success" style="width: auto; padding: 6px 12px;">📊 CSV出力</button>
-                </div>
-
                 <div id="shiftList"></div>
             </div>
         </div>
@@ -132,7 +133,6 @@
 <script>
     const API_URL = 'http://127.0.0.1:5000/api';
     let currentLoggedInUser = '';
-    let currentLoggedInName = ''; // 氏名を保持
     let userRole = '';
     let selectedDate = '';
     let allShifts = [];
@@ -153,8 +153,6 @@
     const salarySummaryCard = document.getElementById('salarySummaryCard');
     const totalMonthlySalary = document.getElementById('totalMonthlySalary');
     const adminStaffSelectGroup = document.getElementById('adminStaffSelectGroup');
-    const csvDownloadBox = document.getElementById('csvDownloadBox');
-    const csvBoxText = document.getElementById('csvBoxText');
 
     async function handleLogin() {
         const userId = document.getElementById('userId').value;
@@ -167,36 +165,25 @@
             });
             const data = await res.json();
             if (data.status === 'success') {
-                currentLoggedInUser = userId; 
-                currentLoggedInName = data.user.name; // フルネームを保存
-                userRole = data.user.role;
-                welcomeText.innerText = `👋 ようこそ、${currentLoggedInName} さん (${userRole === 'manager' ? '管理者' : 'スタッフ'})`;
+                currentLoggedInUser = userId; userRole = data.user.role;
+                welcomeText.innerText = `👋 ようこそ、${data.user.name} さん (${userRole === 'manager' ? '管理者' : 'スタッフ'})`;
                 
+                // ログイン成功時に表示幅の切り替えと画面の切り替えを行う
                 loginCard.style.display = 'none'; 
                 dashboard.style.display = 'block';
-                mainContainer.className = 'container';
-                document.body.style.alignItems = 'flex-start';
+                mainContainer.className = 'container'; // ダッシュボード用のフルワイド幅へ変更
+                document.body.style.alignItems = 'flex-start'; // スクリプト描画後の上部合わせ
 
                 if (userRole === 'manager') {
                     calendarTitle.innerText = '⚙️ シフト代理登録・カレンダー確認';
                     listTitle.innerText = '⚙️ 全スタッフのシフト管理（承認・編集）';
                     adminStaffSelectGroup.style.display = 'block';
                     salarySummaryCard.style.display = 'none';
-                    csvBoxText.innerText = '📊 【管理者】先月分の全スタッフ稼働実績CSV';
-                    csvDownloadBox.style.display = 'flex';
                 } else {
                     calendarTitle.innerText = '📅 希望シフトの申請';
                     listTitle.innerText = '📋 自分の申請済みシフト一覧';
                     adminStaffSelectGroup.style.display = 'none';
                     salarySummaryCard.style.display = 'block';
-                    // 月初（1日〜7日の間など）に先月分CSVボタンを表示するロジック
-                    const today = new Date();
-                    if (today.getDate() <= 7) { 
-                        csvBoxText.innerText = `📊 先月（${today.getMonth() === 0 ? 12 : today.getMonth()}月）の稼働・給与実績`;
-                        csvDownloadBox.style.display = 'flex';
-                    } else {
-                        csvDownloadBox.style.display = 'none';
-                    }
                 }
                 
                 await loadSystemSettings(); await fetchShifts(); await checkNotifications();
@@ -310,15 +297,12 @@
             const calc = shift.calculation;
             const statusBadge = shift.status === 'confirmed' ? '<span class="badge badge-confirmed">確定</span>' : '<span class="badge badge-applied">承認待ち</span>';
             
-            // 💡 【修正点】ID表示（staff01）ではなく、フルネーム（shift.name等）を優先表示。なければID。
-            const displayName = shift.name ? shift.name : shift.username;
-
             let htmlStr = `
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <strong>📅 ${shift.date} (${shift.startTime} ～ ${shift.endTime})</strong>
                     ${statusBadge}
                 </div>
-                <div style="font-size:0.85rem; color:#6b7280; margin-top:4px;">申請者: ${displayName} | 総労働時間: ${calc.totalHours}時間</div>
+                <div style="font-size:0.85rem; color:#6b7280; margin-top:4px;">申請者: ${shift.username} | 総労働時間: ${calc.totalHours}時間</div>
                 <div class="salary-breakdown">
                     💰 <strong>概算給与合計: ¥${calc.totalPay.toLocaleString()}</strong><br>
                     <span style="font-size:0.75rem; color:#6b7280;">(内訳: 基本給 ¥${calc.basicPay.toLocaleString()} | 残業手当 ¥${calc.overtimePay.toLocaleString()} | 深夜手当 ¥${calc.nightPay.toLocaleString()})</span>
@@ -342,42 +326,6 @@
             }
             item.innerHTML = htmlStr; shiftList.appendChild(item);
         });
-    }
-
-    // 📊 CSVファイルを生成してブラウザからダウンロードさせる処理
-    async function downloadPastMonthCSV() {
-        try {
-            const res = await fetch(`${API_URL}/past-month-summary`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: currentLoggedInUser, role: userRole })
-            });
-            const result = await res.json();
-            if (result.status !== 'success' || !result.data) {
-                alert('⚠️ データの取得に失敗しました。'); return;
-            }
-
-            // CSVのヘッダー定義
-            let csvContent = "\uFEFF"; // Excelの文字化けを防ぐBOMを追加
-            csvContent += "氏名,勤務日,総労働時間(時間),総支給額(円),基本給(円),残業手当(円),深夜手当(円)\r\n";
-
-            // 行データ作成
-            result.data.forEach(row => {
-                csvContent += `"${row.name}","${row.date}",${row.hours},${row.totalPay},${row.basicPay},${row.overtimePay},${row.nightPay}\r\n`;
-            });
-
-            // ダウンロードリンク発火
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `shift_summary_${userRole}_pastmonth.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch(e) {
-            alert('⚠️ CSV出力中にエラーが発生しました。');
-        }
     }
 
     async function submitShift() {
@@ -437,11 +385,11 @@
     }
 
     function handleLogout() {
-        currentLoggedInUser = ''; currentLoggedInName = ''; userRole = ''; 
+        currentLoggedInUser = ''; userRole = ''; 
         dashboard.style.display = 'none'; 
         loginCard.style.display = 'block';
-        mainContainer.className = 'login-container';
-        document.body.style.alignItems = 'center';
+        mainContainer.className = 'login-container'; // ログイン用のコンパクトな幅に戻す
+        document.body.style.alignItems = 'center'; // 中央揃えに戻す
     }
 </script>
 </body>
