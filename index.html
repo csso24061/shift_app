@@ -37,7 +37,6 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 5px; }
         .day-name { text-align: center; font-weight: bold; padding: 5px; font-size: 0.85rem; color: #6b7280; }
         
-        /* カレンダーマスと「今日」の装飾 */
         .calendar-day { background: #f9fafb; border: 1px solid #e5e7eb; min-height: 105px; padding: 6px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s; font-weight: 500; position: relative; }
         .calendar-day:hover { background: #f0fdf4; border-color: var(--success); }
         .calendar-day.today { border: 2px solid #2563eb !important; background: #eff6ff; }
@@ -194,7 +193,7 @@
 <script>
     const API_URL = 'http://127.0.0.1:5001/api';
     let currentLoggedInUser = ''; let currentLoggedInName = ''; let userRole = ''; let selectedDate = ''; let allShifts = [];
-    let systemDeadline = ''; // 設定されたシフト提出期限
+    let systemDeadline = ''; 
     
     let currentYear = new Date().getFullYear();
     let currentMonth = new Date().getMonth();
@@ -224,42 +223,34 @@
     const dayMemoInput = document.getElementById('dayMemoInput');
     const saveMemoBtn = document.getElementById('saveMemoBtn');
 
-    // ★ 1週間前判定のためのヘルパー関数
     function isWithinOneWeekOrPast(dateString) {
-        if (userRole === 'manager') return false; // 管理者は常に制限なし
+        if (userRole === 'manager') return false; 
 
         const targetDate = new Date(dateString + 'T00:00:00');
         const today = new Date();
         today.setHours(0,0,0,0);
 
-        // 今日から7日後の日付を計算
         const oneWeekLater = new Date(today);
         oneWeekLater.setDate(today.getDate() + 7);
 
-        // 「過去の日付」または「今日から7日以内」であれば制限対象(true)
         return targetDate < oneWeekLater;
     }
 
-    // 提出期限3日前判定とアラートバナーの更新
     function updateDeadlineWarning() {
         if (!systemDeadline) {
             alertBanner.style.display = 'none';
             return;
         }
 
-        // 今日の日付（時間を00:00:00にリセット）
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // 設定された期限日の日付（時間を00:00:00にリセット）
         const [year, month, day] = systemDeadline.split('-');
         const deadlineDate = new Date(year, month - 1, day);
 
-        // ミリ秒の差分から純粋な「残り日数」を計算
         const diffTime = deadlineDate - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        // 【修正ポイント】残り日数が0日（当日）から3日前の間だけ表示する
         if (diffDays >= 0 && diffDays <= 3) {
             let remainText = diffDays === 0 ? "本日が期限です！" : `残り ${diffDays} 日`;
             
@@ -269,7 +260,6 @@
             alertBanner.style.color = '#92400e';
             alertBanner.innerHTML = `⏰ シフトの提出期限が近づいています！【 提出期限: ${systemDeadline} (${remainText}) 】`;
         } else {
-            // 4日以上前、またはすでに期限を過ぎている場合は表示しない
             alertBanner.style.display = 'none';
         }
     }
@@ -344,7 +334,7 @@
                 document.getElementById('inputClosing').value = data.settings.closingDate;
                 document.getElementById('inputPayment').value = data.settings.paymentDate;
             }
-            updateDeadlineWarning(); // 設定取得時に警告を更新
+            updateDeadlineWarning(); 
         }
     }
 
@@ -369,7 +359,6 @@
         if (userRole === 'manager') return;
         const res = await fetch(`${API_URL}/notifications`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentLoggedInUser }) });
         const data = await res.json();
-        // 3日前判定を優先して上書きされないよう、既存通知が空の場合のみセット
         if (data.status === 'success' && data.alerts.length > 0 && alertBanner.style.display !== 'block') { 
             alertBanner.innerText = data.alerts[0].message; 
             alertBanner.style.display = 'block'; 
@@ -397,7 +386,6 @@
 
         const savedMemos = JSON.parse(localStorage.getItem('shift_system_memos') || '{}');
         
-        // 今日の年月日を文字列化(YYYY-MM-DD)
         const now = new Date();
         const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
@@ -406,7 +394,6 @@
             const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             dayDiv.dataset.date = dateStr;
 
-            // ★ 「今日」のマスを強調
             if (dateStr === todayStr) {
                 dayDiv.classList.add('today');
                 const tBadge = document.createElement('span');
@@ -450,16 +437,14 @@
                 document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
                 this.classList.add('selected'); selectedDate = this.dataset.date;
                 
-                // ★ 1週間前のガード判定をテキストに反映
                 if (isWithinOneWeekOrPast(selectedDate)) {
                     selectedDateText.innerHTML = `📅 選択中: ${currentMonth + 1}月${day}日 <span style="color:var(--danger); font-size:0.85rem; block; margin-top:2px;">⚠️ 1週間以内の変更は外部で連絡してください</span>`;
-                    submitBtn.disabled = true; // スタッフならボタン非活性（関数内で管理者除外）
+                    submitBtn.disabled = true; 
                 } else {
                     selectedDateText.innerText = `📅 選択中: ${currentMonth + 1}月${day}日`;
                     submitBtn.disabled = false;
                 }
                 
-                // 管理者の場合は常に登録可能にする
                 if (userRole === 'manager') {
                     submitBtn.disabled = false;
                 }
@@ -520,7 +505,6 @@
             const calc = shift.calculation;
             const statusBadge = shift.status === 'confirmed' ? '<span class="badge badge-confirmed">確定</span>' : '<span class="badge badge-applied">承認待ち</span>';
             
-            // ★ スタッフ側で1週間未満になっているか判定
             const isLocked = isWithinOneWeekOrPast(shift.date);
 
             let htmlStr = `
@@ -541,7 +525,6 @@
                     <button class="btn-sm btn-danger" onclick="updateShift(${shift.id}, 'delete')">🗑️ 削除</button>
                 </div>`;
             } else {
-                // ★ スタッフ画面：1週間前を過ぎている場合はキャンセルボタンを無効化
                 htmlStr += `<div class="admin-actions">
                     <button class="btn-sm btn-danger" onclick="cancelShiftByStaff(${shift.id})" ${isLocked ? 'disabled title="1週間以内のため変更不可"' : ''}>
                         ${isLocked ? '🔒 変更不可' : '❌ キャンセル'}
@@ -571,7 +554,6 @@
             username = document.getElementById('targetStaffId').value.trim();
             if (!username) { alert('⚠️ 対象スタッフIDを入力してください。'); return; }
         } else {
-            // 安全策としてスタッフ側で直前申請をブロック
             if (isWithinOneWeekOrPast(selectedDate)) { alert('⚠️ 1週間以内のシフト変更・申請はシステムからは行えません。'); return; }
         }
 
