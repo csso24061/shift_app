@@ -61,16 +61,16 @@
 
 <div id="mainContainer" class="login-container">
     
-    <!-- 1. ログインカード -->
+    <!-- 1. ログインカード (初期状態は空欄) -->
     <div id="loginCard" class="card" style="margin-bottom: 0;">
         <h2 class="login-title">🔐 シフト管理システム</h2>
         <div class="form-group">
             <label for="userId">ユーザーID</label>
-            <input type="text" id="userId" placeholder="staff01 または admin01">
+            <input type="text" id="userId" placeholder="スタッフ: staff01 / 管理者: admin01">
         </div>
         <div class="form-group" style="margin-bottom: 22px;">
             <label for="password">パスワード</label>
-            <input type="password" id="password" value="password123">
+            <input type="password" id="password" placeholder="パスワードを入力してください">
         </div>
         <button onclick="handleLogin()">ログイン</button>
     </div>
@@ -122,7 +122,6 @@
 </div>
 
 <script>
-    // APIの向き先を 5001 に変更
     const API_URL = 'http://127.0.0.1:5001/api';
     let currentLoggedInUser = '';
     let currentLoggedInName = '';
@@ -148,8 +147,14 @@
     const adminStaffSelectGroup = document.getElementById('adminStaffSelectGroup');
 
     async function handleLogin() {
-        const userId = document.getElementById('userId').value;
+        const userId = document.getElementById('userId').value.trim();
         const password = document.getElementById('password').value;
+
+        if (!userId || !password) {
+            alert('⚠️ ユーザーIDとパスワードの両方を入力してください。');
+            return;
+        }
+
         try {
             const res = await fetch(`${API_URL}/login`, {
                 method: 'POST',
@@ -388,6 +393,10 @@
         loginCard.style.display = 'block';
         mainContainer.className = 'login-container';
         document.body.style.alignItems = 'center';
+        
+        // ログアウト時にフォームの入力値をリセット
+        document.getElementById('userId').value = '';
+        document.getElementById('password').value = '';
     }
 </script>
 </body>
