@@ -1,7 +1,144 @@
-<!doctype html>
-<meta charset=
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📅 希望シフト提出 (MVPテスト版)</title>
+    
+    <!-- インストール不要でReactを動かすためのライブラリ読み込み -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-"utf-8">
-<title>自己紹介</title>
-<h1>自己紹介</h1>
-<p>授業で作成したページです。</p>
+    <style>
+        .container {
+            max-width: 500px;
+            margin: 40px auto;
+            padding: 20px;
+            font-family: sans-serif;
+            background: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 5px; font-weight: bold; }
+        select, input { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+        .error-banner { background: #fde8e8; color: #e02424; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; }
+        .submit-btn { width: 100%; padding: 12px; background: #1c64f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+        .submit-btn:hover { background: #1a56db; }
+        .success-box { margin-top: 20px; padding: 15px; background: #def7ec; color: #03543f; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- Reactが組み立てた画面をはめ込む空箱 -->
+    <div id="root"></div>
+
+    <!-- ここにReactのプログラムを書きます -->
+    <script type="text/babel">
+        const { useState } = React;
+
+        function App() {
+            const [shiftDate, setShiftDate] = useState("");
+            const [startTime, setStartTime] = useState("09:00");
+            const [endTime, setEndTime] = useState("18:00");
+            const [errorMessage, setErrorMessage] = useState("");
+            const [submittedData, setSubmittedData] = useState(null);
+
+            // 30分刻みの時間リストを生成
+            const generateTimeOptions = () => {
+                const options = [];
+                for (let hour = 0; hour < 24; hour++) {
+                    for (let min of ["00", "30"]) {
+                        const hh = String(hour).padStart(2, "0");
+                        options.push(`${hh}:${min}`);
+                    }
+                }
+                return options;
+            };
+            const timeOptions = generateTimeOptions();
+
+            // 入力検証と送信処理
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setErrorMessage("");
+                setSubmittedData(null);
+
+                // 【検証①】日付の空チェック
+                if (!shiftDate) {
+                    setErrorMessage("⚠️ 日付を選択してください。");
+                    return;
+                }
+
+                // 時間を分に変換して比較
+                const [startH, startM] = startTime.split(":").map(Number);
+                const [endH, endM] = endTime.split(":").map(Number);
+                const startTotalMinutes = startH * 60 + startM;
+                const endTotalMinutes = endH * 60 + endM;
+
+                // 【検証②】時間の逆転チェック
+                if (endTotalMinutes <= startTotalMinutes) {
+                    setErrorMessage("⚠️ 終了時間は、開始時間よりも後の時間を設定してください。");
+                    return;
+                }
+
+                // 検証通過時の処理
+                setSubmittedData({
+                    date: shiftDate,
+                    startTime: startTime,
+                    endTime: endTime,
+                });
+            };
+
+            return (
+                <div className="container">
+                    <h1>📅 希望シフト提出 (MVPテスト版)</h1>
+                    <p className="subtitle">要件：30分刻みでの希望時間入力</p>
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label>勤務希望日:</label>
+                            <input type="date" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} />
+                        </div>
+
+                        <div className="form-group">
+                            <label>開始時間:</label>
+                            <select value={startTime} onChange={(e) => setStartTime(e.target.value)}>
+                                {timeOptions.map((time) => (
+                                    <option key={`start-${time}`} value={time}>{time}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label>終了時間:</label>
+                            <select value={endTime} onChange={(e) => setEndTime(e.target.value)}>
+                                {timeOptions.map((time) => (
+                                    <option key={`end-${time}`} value={time}>{time}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {errorMessage && <div className="error-banner">{errorMessage}</div>}
+
+                        <button type="submit" className="submit-btn">希望シフトを送信</button>
+                    </form>
+
+                    {submittedData && (
+                        <div className="success-box">
+                            <h3>✅ 以下の内容で仮受付しました（30分単位）</h3>
+                            <p><strong>日付:</strong> {submittedData.date}</p>
+                            <p><strong>時間:</strong> {submittedData.startTime} ～ {submittedData.endTime}</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 画面への描画処理
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
