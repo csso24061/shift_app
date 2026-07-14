@@ -71,7 +71,7 @@
         .salary-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.95rem; }
         .salary-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; border-top: 1px solid #ddd; padding-top: 5px; margin-top: 5px; color: #0e9f6e; }
 
-        /* 店長画面用 */
+        /* 管理者画面用 */
         .manager-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
         .summary-card { background: white; padding: 15px; border-radius: 6px; border: 1px solid #ddd; text-align: center; }
         .summary-card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #666; }
@@ -96,12 +96,12 @@
         <!-- ================= 🔑 ログイン画面 ================= -->
         <div id="loginSection" class="login-content">
             <div class="login-box">
-                <h2>🔐 システムログイン</h2>
+                <h2>🔐 シフト管理システム</h2>
                 <p>
                     <strong>【テスト用アカウント一覧】</strong><br>
                     ・スタッフ1：ID: <code>staff01</code> / Pass: <code>password123</code><br>
                     ・スタッフ2：ID: <code>staff02</code> / Pass: <code>password456</code><br>
-                    ・店長用：ID: <code>admin01</code> / Pass: <code>adminpassword</code>
+                    ・管理者用：ID: <code>admin01</code> / Pass: <code>adminpassword</code>
                 </p>
                 <div id="loginErrorArea"></div>
                 <form id="loginForm">
@@ -130,7 +130,7 @@
             <!-- 🔄 モード切り替えタブ -->
             <div class="mode-tab-container" id="tabContainer">
                 <button class="mode-tab active" id="tabStaff">👤 スタッフ用（提出）</button>
-                <button class="mode-tab" id="tabManager">👑 店長用（管理・集計）</button>
+                <button class="mode-tab" id="tabManager">👑 管理者用（管理・集計）</button>
             </div>
 
             <!-- ================= スタッフモード画面 ================= -->
@@ -174,7 +174,7 @@
                 </div>
             </div>
 
-            <!-- ================= 店長モード画面 ================= -->
+            <!-- ================= 管理者モード画面 ================= -->
             <div id="contentManager" class="mode-content">
                 <h1>👑 シフト管理＆人件費集計</h1>
                 <p class="subtitle">提出されたシフトの状況と、概算人件費の集計データです</p>
@@ -388,7 +388,7 @@
                         });
                     }
 
-                    // 2. 店長用全履歴の描画
+                    // 2. 管理者用全履歴の描画
                     if (currentLoggedInRole === 'manager') {
                         managerHistoryList.innerHTML = '';
                         let totalHours = 0;

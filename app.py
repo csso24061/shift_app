@@ -4,11 +4,11 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# 🔑 サンプル用のユーザーマスターデータ（ID / パスワード / 表示名 / 役割）
+# 🔑 サンプル用のユーザーマスターデータ（「店長」を「管理者」に変更）
 USER_MASTER = {
     "staff01": {"password": "password123", "name": "山田 太郎", "role": "staff"},
     "staff02": {"password": "password456", "name": "佐藤 花子", "role": "staff"},
-    "admin01": {"password": "adminpassword", "name": "店長", "role": "manager"}
+    "admin01": {"password": "adminpassword", "name": "管理者", "role": "manager"}
 }
 
 # 💾 シフトデータを保存するリスト
@@ -41,7 +41,7 @@ def login():
 @app.route('/api/shift-submit', methods=['POST'])
 def submit_shift():
     data = request.json
-    username = data.get('username')  # フロントから送られる表示名
+    username = data.get('username')
     shift_date = data.get('date')
     start_time = data.get('startTime')
     end_time = data.get('endTime')
