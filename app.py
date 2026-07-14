@@ -169,9 +169,9 @@ with app.app_context():
         staff = User(username='staff01', password='password123', name='山田 太郎', role='staff')
         db.session.add(staff)
         
-    # 管理者の初期パスワードを別の「adminPass999」に指定
+    # 管理者の初期パスワードを別の「adminpassword」に指定
     if not User.query.filter_by(username='admin01').first():
-        admin = User(username='admin01', password='adminpassword', name='管理 花子', role='manager')
+        admin = User(username='admin01', password='adminpassword', name='管理者', role='manager')
         db.session.add(admin)
         
     db.session.commit()
