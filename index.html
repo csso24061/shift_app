@@ -26,8 +26,7 @@
         .login-container { max-width: 420px; width: 100%; margin: 0 auto; }
         .login-title { text-align: center; justify-content: center; font-size: 1.6rem; color: #111827; margin-bottom: 25px; font-weight: 700; }
         
-        .alert-banner { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1rem; display: none; background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+        .alert-banner { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1rem; display: none; background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1); }
 
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .calendar-nav-btn { width: auto; padding: 6px 14px; font-size: 0.9rem; background: #64748b; }
@@ -236,34 +235,6 @@
         return targetDate < oneWeekLater;
     }
 
-    function updateDeadlineWarning() {
-        if (!systemDeadline) {
-            alertBanner.style.display = 'none';
-            return;
-        }
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const [year, month, day] = systemDeadline.split('-');
-        const deadlineDate = new Date(year, month - 1, day);
-
-        const diffTime = deadlineDate - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays >= 0 && diffDays <= 3) {
-            let remainText = diffDays === 0 ? "本日が期限です！" : `残り ${diffDays} 日`;
-            
-            alertBanner.style.display = 'block';
-            alertBanner.style.backgroundColor = '#fef3c7';
-            alertBanner.style.borderColor = 'var(--warning-color)';
-            alertBanner.style.color = '#92400e';
-            alertBanner.innerHTML = `⏰ シフトの提出期限が近づいています！【 提出期限: ${systemDeadline} (${remainText}) 】`;
-        } else {
-            alertBanner.style.display = 'none';
-        }
-    }
-
     async function handleLogin() {
         const userId = document.getElementById('userId').value.trim();
         const password = document.getElementById('password').value;
@@ -334,7 +305,6 @@
                 document.getElementById('inputClosing').value = data.settings.closingDate;
                 document.getElementById('inputPayment').value = data.settings.paymentDate;
             }
-            updateDeadlineWarning(); 
         }
     }
 
@@ -352,16 +322,50 @@
             alert('✅ システム設定を保存しました。'); 
             systemDeadline = newDeadline;
             await loadSystemSettings(); 
+            await checkNotifications();
         }
     }
 
     async function checkNotifications() {
-        if (userRole === 'manager') return;
-        const res = await fetch(`${API_URL}/notifications`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentLoggedInUser }) });
-        const data = await res.json();
-        if (data.status === 'success' && data.alerts.length > 0 && alertBanner.style.display !== 'block') { 
-            alertBanner.innerText = data.alerts[0].message; 
-            alertBanner.style.display = 'block'; 
+        if (userRole === 'manager') {
+            alertBanner.style.display = 'none';
+            return;
+        }
+        
+        try {
+            const res = await fetch(`${API_URL}/notifications`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ username: currentLoggedInUser }) 
+            });
+            const data = await res.json();
+            
+            if (data.status === 'success' && data.alerts.length > 0) {
+                if (!systemDeadline) {
+                    alertBanner.style.display = 'none';
+                    return;
+                }
+                
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const [year, month, day] = systemDeadline.split('-');
+                const deadlineDate = new Date(year, month - 1, day);
+
+                const diffTime = deadlineDate - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                // 期限日の3日前から当日（0日）までの期間のみ警告文を表示
+                if (diffDays >= 0 && diffDays <= 3) {
+                    alertBanner.innerText = data.alerts[0].message; 
+                    alertBanner.style.display = 'block'; 
+                } else {
+                    // 期限切れ、または4日以上前の場合は完全に非表示にする
+                    alertBanner.style.display = 'none'; 
+                }
+            }
+        } catch (err) {
+            console.error("通知の取得に失敗しました", err);
         }
     }
 
