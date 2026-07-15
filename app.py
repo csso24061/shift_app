@@ -60,7 +60,6 @@ def calculate_pay(start_time, end_time, break_minutes):
 def get_week_range(date_str):
     """指定された日付（YYYY-MM-DD）が含まれる週（月曜日〜日曜日）の日付リストを返す"""
     target_date = datetime.strptime(date_str, '%Y-%m-%d')
-    # 月曜日を起点にする (weekday(): 0=月, 6=日)
     start_of_week = target_date - timedelta(days=target_date.weekday())
     return [(start_of_week + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
 
@@ -135,6 +134,14 @@ def shift_submit():
     end_time = data.get('endTime')
     break_time = int(data.get('breakTime', 0))
 
+    # ★ 1人1日1個のシフト制限チェックを追加
+    existing_shift = Shift.query.filter_by(username=username, date=date_str).first()
+    if existing_shift:
+        return jsonify({
+            "status": "error", 
+            "message": "⚠️ この日は既にシフトが登録・申請されています（1人1日1個まで）。"
+        }), 400
+
     # スタッフ申請時も過重労働にならないかチェック
     is_valid, err_msg = check_labor_limits(username, date_str, start_time, end_time, break_time)
     if not is_valid:
@@ -159,7 +166,6 @@ def admin_shift_update():
     
     if action == 'confirm':
         break_time = int(data.get('breakTime', shift.break_time))
-        # 確定時に労働基準法チェック
         is_valid, err_msg = check_labor_limits(shift.username, shift.date, shift.start_time, shift.end_time, break_time, exclude_shift_id=shift.id)
         if not is_valid:
             return jsonify({"status": "error", "message": err_msg}), 400
@@ -172,7 +178,6 @@ def admin_shift_update():
         end_time = data.get('endTime')
         break_time = int(data.get('breakTime', 0))
         
-        # 編集反映時に労働基準法チェック
         is_valid, err_msg = check_labor_limits(shift.username, shift.date, start_time, end_time, break_time, exclude_shift_id=shift.id)
         if not is_valid:
             return jsonify({"status": "error", "message": err_msg}), 400
@@ -250,7 +255,7 @@ def get_payslip():
         total_hours += hours
         total_pay += pay
         details.append({
-            "date": s.date, "time": f"{s.start_time}～{s.end_time}",
+            "date": s.date, "time": f"{s.start_time}～${s.end_time}",
             "breakTime": s.break_time, "hours": hours, "pay": pay
         })
 
