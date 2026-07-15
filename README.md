@@ -293,18 +293,3 @@ flowchart TD
     CheckDays -->|No| HideAlert[バナーを非表示（CSS: display: none）に設定]
     ShowAlert --> End([処理完了])
     HideAlert --> End
-
-
-## 📌 4. 起動・動作検証方法（クイックスタート）
-
-本システムは、特別なサーバー環境の構築やコマンドラインでのパッケージインストール（`npm install`等）を必要としない、**「HTML/CSS/JavaScript」のみで完結するスタンドアロン型プロトタイプ**です。
-
-GitHub Desktopからリポジトリを取得したあと、以下の手順ですぐに動作検証を開始できます。
-
----
-
-### 4.1 起動手順（3ステップ）
-
-```mermaid
-flowchart LR
-    Step1[1. GitHub Desktopで\n「Show in Finder / Explorer」] --> Step2[2. フォルダから\n「index.html」を探す] --> Step3[3. ブラウザへ\nドラッグ＆ドロップ]
