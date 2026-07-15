@@ -293,7 +293,8 @@ flowchart TD
     CheckDays -->|No| HideAlert[バナーを非表示（CSS: display: none）に設定]
     ShowAlert --> End([処理完了])
     HideAlert --> End
-    #### 2. 最低限必要な起動方法及び動作方法（使い方）
+    
+#### 2. 最低限必要な起動方法及び動作方法（使い方）
 
 本プロトタイプシステムをローカル環境で起動し、動作検証を行うための手順および操作方法を定義します。
 
