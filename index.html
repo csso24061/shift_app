@@ -347,20 +347,31 @@
                 }
                 
                 const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                const currentYear = today.getFullYear();
+                const currentMonth = today.getMonth();
+                
+                // systemDeadline から数字（例: 「25日」または「25」から「25」）だけを抽出
+                const deadlineDayNum = parseInt(systemDeadline.replace(/[^0-9]/g, ''), 10);
+                
+                if (isNaN(deadlineDayNum)) {
+                    alertBanner.style.display = 'none';
+                    return;
+                }
 
-                const [year, month, day] = systemDeadline.split('-');
-                const deadlineDate = new Date(year, month - 1, day);
+                // 期限日の Date オブジェクトを作成
+                const deadlineDate = new Date(currentYear, currentMonth, deadlineDayNum);
+                
+                today.setHours(0, 0, 0, 0);
+                deadlineDate.setHours(0, 0, 0, 0);
 
                 const diffTime = deadlineDate - today;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-                // 期限日の3日前から当日（0日）までの期間のみ警告文を表示
+                // 3日前（残り3日）から当日（残り0日）までの期間のみ表示
                 if (diffDays >= 0 && diffDays <= 3) {
                     alertBanner.innerText = data.alerts[0].message; 
                     alertBanner.style.display = 'block'; 
                 } else {
-                    // 期限切れ、または4日以上前の場合は完全に非表示にする
                     alertBanner.style.display = 'none'; 
                 }
             }
