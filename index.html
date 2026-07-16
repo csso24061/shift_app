@@ -115,6 +115,7 @@
             </div>
         </div>
 
+        <!-- 先月の確定勤怠・給与明細カード -->
         <div id="payslipCard" class="card" style="display: none; border: 2px solid var(--success); background: #f0fdf4;">
             <h2 style="color: #065f46;">📄 <span id="payslipTitleMonth">先月</span>分の確定勤怠・給与明細</h2>
             <p style="font-size: 0.85rem; color: #374151; margin-bottom: 15px;">※先月確定した労働実績および明細書を表示しています。</p>
@@ -164,8 +165,7 @@
                     <div style="border-bottom: 1px dashed #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;">
                         <div class="form-group"><label>開始時間</label><input type="time" id="startTime" value="09:00"></div>
                         <div class="form-group"><label>終了時間</label><input type="time" id="endTime" value="18:00"></div>
-                        <!-- ★ No.10対応: 54分などの端数を任意のキー入力可能にするため step="15" を削除 -->
-                        <div class="form-group"><label>休憩時間 (分)</label><input type="number" id="breakTime" value="0" min="0"></div>
+                        <div class="form-group"><label>休憩時間 (分)</label><input type="number" id="breakTime" value="0" min="0" step="15"></div>
                         <div class="form-group" id="adminStaffSelectGroup" style="display: none;">
                             <label>対象スタッフID</label><input type="text" id="targetStaffId" placeholder="例: staff01">
                         </div>
@@ -386,6 +386,11 @@
         generateCalendar();
         calculateMonthlySummary();
         renderShiftList();
+        
+        // ★ 月を切り替えた際にも、ログイン中がスタッフであれば先月の明細を再読み込み/チェックする
+        if (userRole === 'staff') {
+            checkAndRenderPayslip();
+        }
     }
 
     function generateCalendar() {
@@ -596,24 +601,10 @@
         await fetchShifts();
     }
 
-    // ★ No.17対応: エラー発生時（確定済みシフト削除制限など）にサーバーが返したエラー文言を画面上へダイアログ表示できるよう修正
     async function cancelShiftByStaff(shiftId) {
-        try {
-            const res = await fetch(`${API_URL}/shift-cancel`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ shiftId }) 
-            });
-            const d = await res.json();
-            if (res.ok) { 
-                alert('✅ キャンセルしました。'); 
-                await fetchShifts(); 
-            } else { 
-                alert('⚠️ ' + (d.message || 'キャンセルに失敗しました。')); 
-            }
-        } catch (err) {
-            alert('⚠️ 通信エラーが発生しました。');
-        }
+        const res = await fetch(`${API_URL}/shift-cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shiftId }) });
+        if (res.ok) { alert('✅ キャンセルしました。'); await fetchShifts(); }
+        else { const d = await res.json(); alert(d.message); }
     }
 
     function handleLogout() {
