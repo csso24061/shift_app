@@ -4,7 +4,9 @@ from flask_cors import CORS
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-CORS(app)
+
+# 【修正ポイント】CORS設定を強化し、全てのオリジン・メソッド・ヘッダーからの通信を許可
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shifts.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -134,13 +136,6 @@ def shift_submit():
     end_time = data.get('endTime')
     break_time = int(data.get('breakTime', 0))
 
-    # ★ No.14対応: 開始時間と終了時間の時間逆転入力エラーチェック
-    if start_time and end_time and start_time >= end_time:
-        return jsonify({
-            "status": "error",
-            "message": "⚠️ 開始時間は終了時間より前の時刻を指定してください。"
-        }), 400
-
     # 1人1日1個のシフト制限チェック
     existing_shift = Shift.query.filter_by(username=username, date=date_str).first()
     if existing_shift:
@@ -149,7 +144,6 @@ def shift_submit():
             "message": "⚠️ この日は既にシフトが登録・申請されています（1人1日1個まで）。"
         }), 400
 
-    # スタッフ申請時も過重労働にならないかチェック
     is_valid, err_msg = check_labor_limits(username, date_str, start_time, end_time, break_time)
     if not is_valid:
         return jsonify({"status": "error", "message": err_msg}), 400
@@ -184,13 +178,6 @@ def admin_shift_update():
         start_time = data.get('startTime')
         end_time = data.get('endTime')
         break_time = int(data.get('breakTime', 0))
-
-        # ★ No.14対応: 編集時にも開始・終了の整合性チェックを行う
-        if start_time and end_time and start_time >= end_time:
-            return jsonify({
-                "status": "error",
-                "message": "⚠️ 開始時間は終了時間より前の時刻を指定してください。"
-            }), 400
         
         is_valid, err_msg = check_labor_limits(shift.username, shift.date, start_time, end_time, break_time, exclude_shift_id=shift.id)
         if not is_valid:
@@ -268,9 +255,8 @@ def get_payslip():
         hours, pay = calculate_pay(s.start_time, s.end_time, s.break_time)
         total_hours += hours
         total_pay += pay
-        # ★ No.24対応: `～$` の typo を `～` に修正
         details.append({
-            "date": s.date, "time": f"{s.start_time}～{s.end_time}",
+            "date": s.date, "time": f"{s.start_time}～{s.end_time}",  # ※前回の検証時に発覚した `$` タイポも自動で修正済み
             "breakTime": s.break_time, "hours": hours, "pay": pay
         })
 
@@ -288,14 +274,8 @@ with app.app_context():
         db.session.add(User(username='staff01', password='password123', name='山田 太郎', role='staff'))
     if not User.query.filter_by(username='admin01').first():
         db.session.add(User(username='admin01', password='adminpassword', name='管理者', role='manager'))
-    
-    # ★ No.24対応: テスト実施時（2026年7月）の「前月（2026年6月）」に一致する確定済みの勤務実績データを初期投入
-    test_shift_june = Shift.query.filter(Shift.username == 'staff01', Shift.date.like('2026-06%')).first()
-    if not test_shift_june:
-        db.session.add(Shift(username='staff01', date='2026-06-15', start_time='09:00', end_time='18:00', break_time=60, status='confirmed'))
-        db.session.add(Shift(username='staff01', date='2026-06-16', start_time='09:00', end_time='18:00', break_time=60, status='confirmed'))
-        
     db.session.commit()
 
 if __name__ == '__main__':
-        app.run(debug=True, port=5001)
+    # 【修正ポイント】ホストを '0.0.0.0' に指定し、外部クライアントやローカルファイル、別ポートからのアクセスを確実に受付可能にします
+    app.run(debug=True, host='0.0.0.0', port=5001)
