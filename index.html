@@ -164,7 +164,6 @@
                     <div style="border-bottom: 1px dashed #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;">
                         <div class="form-group"><label>開始時間</label><input type="time" id="startTime" value="09:00"></div>
                         <div class="form-group"><label>終了時間</label><input type="time" id="endTime" value="18:00"></div>
-                        <!-- ★ No.10対応: 54分などの端数を任意のキー入力可能にするため step="15" を削除 -->
                         <div class="form-group"><label>休憩時間 (分)</label><input type="number" id="breakTime" value="0" min="0"></div>
                         <div class="form-group" id="adminStaffSelectGroup" style="display: none;">
                             <label>対象スタッフID</label><input type="text" id="targetStaffId" placeholder="例: staff01">
@@ -191,7 +190,9 @@
 </div>
 
 <script>
+    // 接続先を 127.0.0.1 (Flask) に直接固定
     const API_URL = 'http://127.0.0.1:5001/api';
+
     let currentLoggedInUser = ''; let currentLoggedInName = ''; let userRole = ''; let selectedDate = ''; let allShifts = [];
     let systemDeadline = ''; 
     
@@ -563,6 +564,11 @@
         const breakTime = document.getElementById('breakTime').value;
         let username = currentLoggedInUser;
         
+        if (startTime >= endTime) {
+            alert("⚠️ 開始時間は終了時間より前の時刻に設定してください。");
+            return;
+        }
+
         if (userRole === 'manager') {
             username = document.getElementById('targetStaffId').value.trim();
             if (!username) { alert('⚠️ 対象スタッフIDを入力してください。'); return; }
@@ -588,6 +594,11 @@
         const newEnd = prompt("新しい終了時間 (HH:MM)", currentEnd); if (!newEnd) return;
         const newBreak = prompt("新しい休憩時間 (分)", currentBreak); if (newBreak === null) return;
 
+        if (newStart >= newEnd) {
+            alert("⚠️ エラー: 開始時間は終了時間より前の時刻に設定してください。");
+            return;
+        }
+
         const res = await fetch(`${API_URL}/admin/shift-update`, { 
             method: 'POST', headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ shiftId, action: 'edit', startTime: newStart, endTime: newEnd, breakTime: newBreak }) 
@@ -596,24 +607,10 @@
         await fetchShifts();
     }
 
-    // ★ No.17対応: エラー発生時（確定済みシフト削除制限など）にサーバーが返したエラー文言を画面上へダイアログ表示できるよう修正
     async function cancelShiftByStaff(shiftId) {
-        try {
-            const res = await fetch(`${API_URL}/shift-cancel`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ shiftId }) 
-            });
-            const d = await res.json();
-            if (res.ok) { 
-                alert('✅ キャンセルしました。'); 
-                await fetchShifts(); 
-            } else { 
-                alert('⚠️ ' + (d.message || 'キャンセルに失敗しました。')); 
-            }
-        } catch (err) {
-            alert('⚠️ 通信エラーが発生しました。');
-        }
+        const res = await fetch(`${API_URL}/shift-cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shiftId }) });
+        if (res.ok) { alert('✅ キャンセルしました。'); await fetchShifts(); }
+        else { const d = await res.json(); alert("⚠️ " + d.message); }
     }
 
     function handleLogout() {
