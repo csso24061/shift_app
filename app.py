@@ -1,11 +1,12 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file # send_file を追加
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime, timedelta
+import os
 
 app = Flask(__name__)
 
-# 【修正ポイント】CORS設定を強化し、全てのオリジン・メソッド・ヘッダーからの通信を許可
+# CORS設定
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shifts.db'
@@ -27,10 +28,10 @@ class Shift(db.Model):
     __tablename__ = 'shifts'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), nullable=False)
-    date = db.Column(db.String(20), nullable=False) # YYYY-MM-DD
+    date = db.Column(db.String(20), nullable=False)
     start_time = db.Column(db.String(10), nullable=False)
     end_time = db.Column(db.String(10), nullable=False)
-    break_time = db.Column(db.Integer, default=0) # 休憩時間（分）
+    break_time = db.Column(db.Integer, default=0)
     status = db.Column(db.String(20), default='applied')
 
 class SystemSetting(db.Model):
@@ -44,7 +45,6 @@ class SystemSetting(db.Model):
 # 補助関数
 # ----------------------------------------
 def parse_hours(start_time, end_time, break_minutes):
-    """開始・終了・休憩時間から実労働時間を計算する"""
     try:
         fmt = '%H:%M'
         tdelta = datetime.strptime(end_time, fmt) - datetime.strptime(start_time, fmt)
@@ -54,22 +54,18 @@ def parse_hours(start_time, end_time, break_minutes):
         return 0.0
 
 def calculate_pay(start_time, end_time, break_minutes):
-    """実労働時間と給与を計算する"""
     hours = parse_hours(start_time, end_time, break_minutes)
     basic_pay = int(hours * 1200)
     return hours, basic_pay
 
 def get_week_range(date_str):
-    """指定された日付（YYYY-MM-DD）が含まれる週（月曜日〜日曜日）の日付リストを返す"""
     target_date = datetime.strptime(date_str, '%Y-%m-%d')
     start_of_week = target_date - timedelta(days=target_date.weekday())
     return [(start_of_week + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
 
 def check_labor_limits(username, date_str, start_time, end_time, break_time, exclude_shift_id=None):
-    """法定労働時間（1日8時間・週40時間）を超えないかチェックする"""
     new_hours = parse_hours(start_time, end_time, break_time)
     
-    # 1. 1日8時間チェック
     day_shifts = Shift.query.filter(Shift.username == username, Shift.date == date_str).all()
     day_total = 0.0
     for s in day_shifts:
@@ -80,7 +76,6 @@ def check_labor_limits(username, date_str, start_time, end_time, break_time, exc
     if (day_total + new_hours) > 8.0:
         return False, f"【労働基準法違反エラー】1日の実労働時間が8時間を超えます（現在の日合計: {day_total + new_hours}時間）"
 
-    # 2. 週40時間チェック
     week_days = get_week_range(date_str)
     week_shifts = Shift.query.filter(Shift.username == username, Shift.date.in_(week_days)).all()
     week_total = 0.0
@@ -93,6 +88,14 @@ def check_labor_limits(username, date_str, start_time, end_time, break_time, exc
         return False, f"【労働基準法違反エラー】週の実労働時間が40時間を超えます（現在の週合計: {week_total + new_hours}時間）"
         
     return True, ""
+
+# ----------------------------------------
+# 画面表示用のルート（追加）
+# ----------------------------------------
+@app.route('/')
+def index():
+    # app.py と同じフォルダにある index.html をブラウザに返します
+    return send_file('index.html')
 
 # ----------------------------------------
 # APIルート定義
@@ -136,22 +139,15 @@ def shift_submit():
     end_time = data.get('endTime')
     break_time = int(data.get('breakTime', 0))
 
-    # 1人1日1個のシフト制限チェック
     existing_shift = Shift.query.filter_by(username=username, date=date_str).first()
     if existing_shift:
-        return jsonify({
-            "status": "error", 
-            "message": "⚠️ この日は既にシフトが登録・申請されています（1人1日1個まで）。"
-        }), 400
+        return jsonify({"status": "error", "message": "⚠️ この日は既にシフトが登録・申請されています。"}), 400
 
     is_valid, err_msg = check_labor_limits(username, date_str, start_time, end_time, break_time)
     if not is_valid:
         return jsonify({"status": "error", "message": err_msg}), 400
 
-    new_shift = Shift(
-        username=username, date=date_str, start_time=start_time, end_time=end_time, 
-        break_time=break_time, status='applied'
-    )
+    new_shift = Shift(username=username, date=date_str, start_time=start_time, end_time=end_time, break_time=break_time, status='applied')
     db.session.add(new_shift)
     db.session.commit()
     return jsonify({"status": "success"}), 200
@@ -164,29 +160,21 @@ def admin_shift_update():
         return jsonify({"status": "error", "message": "Shift not found"}), 404
         
     action = data.get('action')
-    
     if action == 'confirm':
         break_time = int(data.get('breakTime', shift.break_time))
         is_valid, err_msg = check_labor_limits(shift.username, shift.date, shift.start_time, shift.end_time, break_time, exclude_shift_id=shift.id)
-        if not is_valid:
-            return jsonify({"status": "error", "message": err_msg}), 400
-            
+        if not is_valid: return jsonify({"status": "error", "message": err_msg}), 400
         shift.status = 'confirmed'
         shift.break_time = break_time
-        
     elif action == 'edit':
         start_time = data.get('startTime')
         end_time = data.get('endTime')
         break_time = int(data.get('breakTime', 0))
-        
         is_valid, err_msg = check_labor_limits(shift.username, shift.date, start_time, end_time, break_time, exclude_shift_id=shift.id)
-        if not is_valid:
-            return jsonify({"status": "error", "message": err_msg}), 400
-            
+        if not is_valid: return jsonify({"status": "error", "message": err_msg}), 400
         shift.start_time = start_time
         shift.end_time = end_time
         shift.break_time = break_time
-        
     elif action == 'delete': 
         db.session.delete(shift)
         
@@ -235,38 +223,22 @@ def get_notifications():
 def get_payslip():
     data = request.get_json() or {}
     username = data.get('username')
-    
     today = datetime.today()
     first_day_this_month = today.replace(day=1)
     last_day_last_month = first_day_this_month - timedelta(days=1)
     last_month_str = last_day_last_month.strftime('%Y-%m')
 
-    shifts = Shift.query.filter(
-        Shift.username == username,
-        Shift.status == 'confirmed',
-        Shift.date.like(f"{last_month_str}%")
-    ).order_by(Shift.date).all()
-
+    shifts = Shift.query.filter(Shift.username == username, Shift.status == 'confirmed', Shift.date.like(f"{last_month_str}%")).order_by(Shift.date).all()
     total_hours = 0.0
     total_pay = 0
     details = []
-
     for s in shifts:
         hours, pay = calculate_pay(s.start_time, s.end_time, s.break_time)
         total_hours += hours
         total_pay += pay
-        details.append({
-            "date": s.date, "time": f"{s.start_time}～{s.end_time}",  # ※前回の検証時に発覚した `$` タイポも自動で修正済み
-            "breakTime": s.break_time, "hours": hours, "pay": pay
-        })
+        details.append({"date": s.date, "time": f"{s.start_time}～{s.end_time}", "breakTime": s.break_time, "hours": hours, "pay": pay})
 
-    return jsonify({
-        "status": "success",
-        "targetMonth": last_month_str,
-        "totalHours": round(total_hours, 1),
-        "totalPay": total_pay,
-        "details": details
-    }), 200
+    return jsonify({"status": "success", "targetMonth": last_month_str, "totalHours": round(total_hours, 1), "totalPay": total_pay, "details": details}), 200
 
 with app.app_context():
     db.create_all()
@@ -277,5 +249,4 @@ with app.app_context():
     db.session.commit()
 
 if __name__ == '__main__':
-    # 【修正ポイント】ホストを '0.0.0.0' に指定し、外部クライアントやローカルファイル、別ポートからのアクセスを確実に受付可能にします
     app.run(debug=True, host='0.0.0.0', port=5001)
